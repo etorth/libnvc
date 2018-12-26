@@ -1,1 +1,1 @@
-# libnvimclient
+# libnvc
