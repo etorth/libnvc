@@ -25,6 +25,11 @@
 extern "C" {
 #endif
 
+#define LIBNVC_LOG_INFO    0
+#define LIBNVC_LOG_WARNING 1
+#define LIBNVC_LOG_ERROR   2
+#define LIBNVC_LOG_DEBUG   3
+
 struct libnvc_client;
 struct libnvc_server;
 
@@ -57,12 +62,17 @@ typedef int (*libnvc_api_fill_rect)(
         int,            // w
         int);           // h
 
+typedef int (*libnvc_api_draw_hook_before)();
+typedef int (*libnvc_api_draw_hook_after )();
+
 struct libnvc_api
 {
-    libnvc_api_draw_utf8 draw_utf8;
-    libnvc_api_draw_line draw_line;
-    libnvc_api_draw_rect draw_rect;
-    libnvc_api_fill_rect fill_rect;
+    libnvc_api_draw_utf8            draw_utf8;
+    libnvc_api_draw_line            draw_line;
+    libnvc_api_draw_rect            draw_rect;
+    libnvc_api_fill_rect            fill_rect;
+    libnvc_api_draw_hook_before     draw_hook_before;
+    libnvc_api_draw_hook_after      draw_hook_after;
 };
 
 struct libnvc_client *libnvc_client_new   (const char *, struct libnvc_api);

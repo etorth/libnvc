@@ -18,13 +18,14 @@
 
 #include <stdexcept>
 #include "libnvc.h"
+#include "client.hpp"
 
-static handle_exception(const nvc_inn_client &client)
+static void handle_exception(const nvc_inn_client &client)
 {
     try{
         throw;
     }catch(const std::exception &e){
-        client.report_exception(e.what().c_str());
+        client.log(LIBNVC_LOG_ERROR, e.what().c_str());
     }
 }
 

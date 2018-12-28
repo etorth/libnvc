@@ -1,0 +1,95 @@
+#=======================================================================================
+#
+#        Filename: CMakeLists.txt
+#         Created: 12/25/2018 13:19:07
+#     Description:
+#
+#         Version: 1.0
+#        Revision: none
+#        Compiler: cmake
+#
+#          Author: ANHONG
+#           Email: anhonghe@gmail.com
+#    Organization: USTC
+#
+#=======================================================================================
+
+PROJECT(LIBNVC)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+
+INCLUDE(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
+
+IF(COMPILER_SUPPORTS_CXX17)
+    SET(CMAKE_CXX_STANDARD 17)
+ELSE()
+    MESSAGE(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support.")
+ENDIF()
+
+# enable/disable condcheck()
+# cmake disble assert() if in release mode
+# ADD_DEFINITIONS(-DCONDCHECK)
+
+# add flags to release mode
+# by default won't use release mode
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS}")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-strict-aliasing")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wfatal-errors -Wextra -Wunused -Werror")
+
+# always compile libnvc in debug mode
+# for trace message use LIBNVC_DEBUG_ARG_LIST to enable
+SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS}")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+
+# enable check for asan/usan/tsan
+# keep in mind that these three can't be set at the same time
+
+OPTION(LIBNVC_ENABLE_ASAN "Enable ASAN" OFF)
+OPTION(LIBNVC_ENABLE_USAN "Enable USAN" OFF)
+OPTION(LIBNVC_ENABLE_TSAN "Enable TSAN" OFF)
+
+IF(LIBNVC_ENABLE_ASAN)
+    MESSAGE(STATUS "ASAN enabled")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+ENDIF()
+
+IF(LIBNVC_ENABLE_USAN)
+    MESSAGE(STATUS "USAN enabled")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+ENDIF()
+
+IF(LIBNVC_ENABLE_TSAN)
+    MESSAGE(STATUS "TSAN enabled")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=thread")
+ENDIF()
+
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -ggdb3 -pedantic")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-strict-aliasing")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Wunused -Werror")
+
+SET(LIBNVC_3RD_PARTY_DIR "${CMAKE_CURRENT_BINARY_DIR}/3rdparty")
+SET(LIBNVC_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+# set additional module path
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
+FILE(GLOB LIBNVC_DOWNLOAD_SUBDIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/download/*.cmake")
+FOREACH(LIBNVC_DOWNLOAD ${LIBNVC_DOWNLOAD_SUBDIR})
+    INCLUDE(${LIBNVC_DOWNLOAD})
+ENDFOREACH()
+
+FILE(GLOB LIBNVC_DEPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/deps/*.cmake")
+FOREACH(LIBNVC_DEP ${LIBNVC_DEPS_DIR})
+    INCLUDE(${LIBNVC_DEP})
+ENDFOREACH()
+
+SET(CMAKE_SKIP_RPATH TRUE)
+ADD_SUBDIRECTORY(src)
+
+OPTION(LIBNVC_BUILD_SAMPLE "Enable sample projects" OFF)
+IF(LIBNVC_BUILD_SAMPLE)
+    MESSAGE(STATUS "Sample projects enabled")
+    ADD_SUBDIRECTORY(sample)
+ENDIF()
