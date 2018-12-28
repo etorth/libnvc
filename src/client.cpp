@@ -46,6 +46,28 @@ void libnvc::client::process_new_root(mpack_node_t root)
                         }
                     case libncv::client::RESP:
                         {
+                            int64_t msg_id = xxx;
+                            int64_t req_id = xxxxxx;
+
+                            auto resp_handler = m_onresp.find(msg_id);
+
+                            if( resp_handler == m_onresp.end()){
+                                throw std::runtime_error("can't find handler...");
+                            }
+
+                            switch(req_id){
+                                case libnvc::reqid("nvim_input"):
+                                    {
+                                        libnvc::req<libncv::reqid("nvim_input")>::res_t res;
+                                        libnvc::mp_read(m_root, res);
+
+                                        (resp_handler->second)(libnvc::req<0>::res_t(res));
+                                        m_onresp.erase(resp_handler);
+                                        break;
+                                    }
+                            }
+
+
                             break;
                         }
                     case libnvc::type::NOTIF:
