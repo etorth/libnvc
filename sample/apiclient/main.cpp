@@ -1,8 +1,8 @@
 /*
  * =====================================================================================
  *
- *       Filename: rpc.cpp
- *        Created: 12/26/2018 08:55:18
+ *       Filename: main.cpp
+ *        Created: 12/29/2018 06:56:01
  *    Description: 
  *
  *        Version: 1.0
@@ -16,8 +16,17 @@
  * =====================================================================================
  */
 
-#include "rpc.hpp"
+#include "libncv.hpp"
 
-void libnvc::rpc::peek_response(int32_t msgid)
+int main()
 {
+    libnvc::asio_socket socket;
+    if(!socket.connect("localhost", 6666)){
+        throw std::runtime_error("failed to connect to localhost:6666");
+    }
+
+    libnvc::api_client client(&socket);
+    while(true){
+        client.poll();
+    }
 }

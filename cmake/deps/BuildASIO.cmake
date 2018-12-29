@@ -1,7 +1,7 @@
 #=======================================================================================
 #
-#        Filename: BuildMSGPackC.cmake
-#         Created: 05/03/2018 13:19:07
+#        Filename: BuildASIO.cmake
+#         Created: 05/03/2016 13:19:07
 #     Description: required: LIBNVC_3RD_PARTY_DIR
 #
 #         Version: 1.0
@@ -17,12 +17,10 @@
 INCLUDE(ExternalProject)
 
 ExternalProject_Add(
-    msgpack-c
+    asio
 
-    GIT_REPOSITORY "https://github.com/msgpack/msgpack-c.git"
-    GIT_TAG        "master"
-  
-    SOURCE_DIR "${LIBNVC_3RD_PARTY_DIR}/msgpack-c"
+    PREFIX "${LIBNVC_3RD_PARTY_DIR}/asio"
+    URL https://github.com/chriskohlhoff/asio/archive/asio-1-12-2.tar.gz
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -31,5 +29,6 @@ ExternalProject_Add(
     PATCH_COMMAND ""
 )
 
-SET(MSGPACKC_INCLUDE_DIRS "${LIBNVC_3RD_PARTY_DIR}/msgpack-c/include")
-INCLUDE_DIRECTORIES(SYSTEM ${MSGPACKC_INCLUDE_DIRS})
+ADD_DEFINITIONS(-DASIO_STANDALONE)
+SET(ASIO_INCLUDE_DIRS "${LIBNVC_3RD_PARTY_DIR}/asio/src/asio/asio/include")
+INCLUDE_DIRECTORIES(SYSTEM ${ASIO_INCLUDE_DIRS})

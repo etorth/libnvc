@@ -1,8 +1,8 @@
 /*
  * =====================================================================================
  *
- *       Filename: asionet.hpp
- *        Created: 12/26/2018 06:08:09
+ *       Filename: valdef.hpp
+ *        Created: 12/29/2018 21:31:20
  *    Description: 
  *
  *        Version: 1.0
@@ -16,3 +16,13 @@
  * =====================================================================================
  */
 
+#pragma once
+#include <cstdint>
+#include <cstddef>
+
+namespace libnvc
+{
+    constexpr int64_t REQ   = 0;
+    constexpr int64_t RESP  = 1;
+    constexpr int64_t NOTIF = 2;
+}

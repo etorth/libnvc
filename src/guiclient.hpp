@@ -1,8 +1,8 @@
 /*
  * =====================================================================================
  *
- *       Filename: request.hpp
- *        Created: 12/27/2018 06:29:57
+ *       Filename: guiclient.hpp
+ *        Created: 12/28/2018 20:50:00
  *    Description: 
  *
  *        Version: 1.0
@@ -17,9 +17,11 @@
  */
 
 #pragma once
-namespace libnvc::type
+#include "apiclient.hpp"
+
+namespace libnvc
 {
-    class request
+    class gui_client: public api_client
     {
     };
 }

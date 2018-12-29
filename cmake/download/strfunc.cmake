@@ -14,5 +14,12 @@
 #
 #=======================================================================================
 
-FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.hpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc")
-FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.cpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc")
+MESSAGE(STATUS "download strfunc")
+FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.hpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.hpp")
+FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.cpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.cpp")
+MESSAGE(STATUS "download strfunc done, in ${LIBNVC_3RD_PARTY_DIR}/download/strfunc")
+
+SET(STRFUNC_INCLUDE_DIRS "${LIBNVC_3RD_PARTY_DIR}/download/strfunc")
+SET(STRFUNC_SRC_DIR      "${LIBNVC_3RD_PARTY_DIR}/download/strfunc")
+
+INCLUDE_DIRECTORIES(SYSTEM ${STRFUNC_INCLUDE_DIRS})
