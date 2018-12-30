@@ -36,7 +36,7 @@ namespace libnvc
             virtual void disconnect()               = 0;
 
         public:
-            virtual size_t send(const uint8_t *, size_t) = 0; // blocking send, return after done all bytes
-            virtual size_t recv(      uint8_t *, size_t) = 0;
+            virtual size_t send(const char *, size_t) = 0; // blocking send, return after done all bytes
+            virtual size_t recv(      char *, size_t) = 0;
     };
 }

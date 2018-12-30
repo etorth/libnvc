@@ -70,13 +70,13 @@ namespace libnvc
             }
 
         public:
-            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void(libnvc::object)> on_resp)
+            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void(typename libnvc::req<reqid>::res_t)> on_resp)
             {
                 int64_t seq_id = seqid(1);
                 int64_t msg_id = msgid(reqid, seq_id);
 
-                parms.pack(msg_id);
-                m_socket->send(parms.data(), parms.length());
+                auto bytestream = parms.pack(msg_id);
+                m_socket->send(bytestream.data(), bytestream.length());
 
                 if(!on_resp){
                     return;

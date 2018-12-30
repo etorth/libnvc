@@ -55,13 +55,13 @@ namespace libnvc
             }
 
         public:
-            size_t send(const uint8_t *buf, size_t size)
+            size_t send(const char *buf, size_t size)
             {
                 std::error_code ec;
                 return asio::write(m_socket, asio::buffer(buf, size), ec);
             }
 
-            size_t recv(uint8_t *buf, size_t size)
+            size_t recv(char *buf, size_t size)
             {
                 std::error_code ec;
                 return asio::read(m_socket, asio::buffer(buf, size), [](std::error_code &, size_t) -> size_t
@@ -91,12 +91,12 @@ void libnvc::asio_socket::disconnect()
     m_impl->disconnect();
 }
 
-size_t libnvc::asio_socket::send(const uint8_t *buf, size_t size)
+size_t libnvc::asio_socket::send(const char *buf, size_t size)
 {
     return m_impl->send(buf, size);
 }
 
-size_t libnvc::asio_socket::recv(uint8_t *buf, size_t size)
+size_t libnvc::asio_socket::recv(char *buf, size_t size)
 {
     return m_impl->recv(buf, size);
 }

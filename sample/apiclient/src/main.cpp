@@ -15,7 +15,7 @@
  *
  * =====================================================================================
  */
-
+#include <iostream>
 #include "libnvc.hpp"
 
 int main()
@@ -26,6 +26,11 @@ int main()
     }
 
     libnvc::api_client client(&socket);
+    client.forward<libnvc::reqid("nvim_input")>({"$i123<CR>123<ESC>"}, [](int64_t len_done)
+    {
+        std::cout << "return: " << len_done << std::endl;
+    });
+
     while(true){
         client.poll();
     }

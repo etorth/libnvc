@@ -74,7 +74,7 @@ namespace libnvc
             static size_t read_socket(mpack_tree_t *ptree, char *buf, size_t count)
             {
                 if(auto psocket = (libnvc::socket *)(mpack_tree_context(ptree))){
-                    return psocket->recv((uint8_t *)(buf), count);
+                    return psocket->recv(buf, count);
                 }
                 throw std::runtime_error(str_fflprintf(": Empty context in mpack_tree_t: %p", ptree));
             }
