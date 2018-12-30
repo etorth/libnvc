@@ -17,6 +17,7 @@
  */
 
 #include "asio.hpp"
+#include "strfunc.hpp"
 #include "asiosocket.hpp"
 
 namespace libnvc
@@ -58,18 +59,61 @@ namespace libnvc
             size_t send(const char *buf, size_t size)
             {
                 std::error_code ec;
-                return asio::write(m_socket, asio::buffer(buf, size), ec);
+                if(auto size_done = asio::write(m_socket, asio::buffer(buf, size), ec); !ec){
+                    return size_done;
+                }
+                throw std::runtime_error(str_printf("asio::write(%p, %zu) failed: %s", buf, size, ec.message().c_str()));
             }
 
             size_t recv(char *buf, size_t size)
             {
                 std::error_code ec;
-                return asio::read(m_socket, asio::buffer(buf, size), [](std::error_code &, size_t) -> size_t
+                if(auto size_recv = asio::read(m_socket, asio::buffer(buf, size), [this](std::error_code &, size_t done) -> size_t
                 {
-                    // always return zero
-                    // to support the non-blocking read for mpack_try_parse_tree()
-                    return 0;
-                }, ec);
+                    // asio::read() is error-prone, it works as:
+                    //
+                    //     buffer buf(ptr, capacity);
+                    //     while(!buf.full()){
+                    //         if(auto count = call_this_func(ec, buf.done_size())){
+                    //             read_some(count, buf);
+                    //         }else{
+                    //             break;
+                    //         }
+                    //     }
+                    //     return buf.done_size();
+                    //
+                    // so if the first call returns 0, this will never read any data
+                    // but if first time doesn't return 0, then read_some() will block to read at least ONE byte
+                    //
+                    // what we need is:
+                    //     1. read all data valid now, if no data just skip read
+                    //     2. return immediately
+                    // to get this we have to check if there is data
+
+                    asio::error_code ec_ctrl;
+                    asio::ip::tcp::socket::bytes_readable ctrl(true);
+
+                    m_socket.io_control(ctrl, ec_ctrl);
+                    if(ec_ctrl){
+                        throw std::runtime_error(str_printf("socket::io_control(byte_readable) failed: %s", ec_ctrl.message().c_str()));
+                    }
+
+                    size_t has_data = ctrl.get();
+
+                    // if there is data
+                    // we can try it now or delay to next time
+
+                    // this function is blocking
+                    // if we alreayd done some data, return and try next time
+                    if(has_data == 0 || done > 1024){
+                        return 0;
+                    }
+                    return has_data;
+
+                }, ec); !ec){
+                    return size_recv;
+                }
+                throw std::runtime_error(str_printf("asio::read(%p, %zu) failed: %s", buf, size, ec.message().c_str()));
             }
     };
 }
