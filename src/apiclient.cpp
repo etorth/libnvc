@@ -102,49 +102,60 @@ void libnvc::api_client::poll()
         // internally we can check if it equals to mpack_tree_nil_node(&m_tree)
 
         auto root = rootopt.value();
-        switch(mpack_node_type(root)){
-            case mpack_type_int:
+        switch(auto root_type = mpack_node_type(root)){
+            case mpack_type_array:
                 {
-                    switch(mpack_node_int(root)){
-                        case libnvc::REQ:
+                    auto first = mpack_node_array_at(root, 0);
+                    switch(auto first_type = mpack_node_type(first)){
+                        case mpack_type_int:
+                        case mpack_type_uint:
                             {
-                                break;
-                            }
-                        case libnvc::RESP:
-                            {
-                                auto [msg_id, req_id] = msgid_decomp(123);
-                                auto resp_handler     = m_onresp.find(msg_id);
-
-                                if( resp_handler == m_onresp.end()){
-                                    throw std::runtime_error("can't find handler...");
-                                }
-
-                                switch(req_id){
-                                    case libnvc::reqid("nvim_input"):
+                                switch(auto msg_type = mpack_node_int(first)){
+                                    case libnvc::REQ:
                                         {
-                                            auto res = libnvc::mp_read<typename libnvc::req<libnvc::reqid("nvim_input")>::res_t>(root);
-                                            (resp_handler->second)(libnvc::object(res));
-                                            m_onresp.erase(resp_handler);
                                             break;
                                         }
+                                    case libnvc::RESP:
+                                        {
+                                            auto [msg_id, req_id] = msgid_decomp(123);
+                                            auto resp_handler     = m_onresp.find(msg_id);
+
+                                            if( resp_handler == m_onresp.end()){
+                                                throw std::runtime_error("can't find handler...");
+                                            }
+
+                                            switch(req_id){
+                                                case libnvc::reqid("nvim_input"):
+                                                    {
+                                                        auto res = libnvc::mp_read<typename libnvc::req<libnvc::reqid("nvim_input")>::res_t>(root);
+                                                        (resp_handler->second)(libnvc::object(res));
+                                                        m_onresp.erase(resp_handler);
+                                                        break;
+                                                    }
+                                            }
+                                            break;
+                                        }
+                                    case libnvc::NOTIF:
+                                        {
+                                            break;
+                                        }
+                                    default:
+                                        {
+                                            throw std::runtime_error(str_printf("unknown message type: %d", (int)(msg_type)));
+                                        }
                                 }
-
-
-                                break;
-                            }
-                        case libnvc::NOTIF:
-                            {
                                 break;
                             }
                         default:
                             {
-                                break;
+                                throw std::runtime_error(str_printf("unknown node type: %d", (int)(first_type)));
                             }
                     }
+                    break;
                 }
             default:
                 {
-                    break;
+                    throw std::runtime_error(str_printf("message is not an array: %d", (int)(root_type)));
                 }
         }
     }
