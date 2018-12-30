@@ -39,7 +39,11 @@ std::string libnvc::req<libnvc::reqid("nvim_buf_line_count")>::parms_t::pack(int
         mp_write(&writer, libnvc::REQ);
         mp_write(&writer, msgid);
         mp_write(&writer, "nvim_buf_line_count");
-        mp_write(&writer, buffer);
+        mpack_start_array(&writer, 1);
+        {
+            mp_write(&writer, buffer);
+        }
+        mpack_finish_array(&writer);
     }
     mpack_finish_array(&writer);
 
@@ -65,8 +69,12 @@ std::string libnvc::req<libnvc::reqid("nvim_input")>::parms_t::pack(int64_t msgi
     {
         mp_write(&writer, libnvc::REQ);
         mp_write(&writer, msgid);
-        mp_write(&writer, "nvim_buf_line_count");
-        mp_write(&writer, keys);
+        mp_write(&writer, "nvim_input");
+        mpack_start_array(&writer, 1);
+        {
+            mp_write(&writer, keys);
+        }
+        mpack_finish_array(&writer);
     }
     mpack_finish_array(&writer);
 

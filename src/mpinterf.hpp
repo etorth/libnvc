@@ -146,6 +146,11 @@ namespace libnvc
         mpack_write_i64(writer, vec[1]);
     }
 
+    inline void mp_write(mpack_writer_t *writer, int64_t val)
+    {
+        mpack_write_i64(writer, val);
+    }
+
     inline void mp_write(mpack_writer_t *writer, double val)
     {
         mpack_write_double(writer, val);
@@ -154,6 +159,11 @@ namespace libnvc
     inline void mp_write(mpack_writer_t* writer, const std::string& val)
     {
         mpack_write_cstr(writer, val.c_str());
+    }
+
+    inline void mp_write(mpack_writer_t* writer, const char *val)
+    {
+        mpack_write_cstr(writer, val);
     }
 
     inline void mp_write(mpack_writer_t* writer, const libnvc::object& obj)
