@@ -54,14 +54,18 @@ namespace libnvc
         public:
             std::optional<mpack_node_t> poll()
             {
-                if(!mpack_tree_try_parse(&m_tree)){
-                    return {};
+                if(mpack_tree_try_parse(&m_tree)){
+                    return mpack_tree_root(&m_tree);
                 }
+
+                // no message valid:
+                //   1. no enough data received
+                //   2. error occurred
 
                 switch(auto ec = mpack_tree_error(&m_tree)){
                     case mpack_ok:
                         {
-                            return mpack_tree_root(&m_tree);
+                            return {};
                         }
                     default:
                         {
