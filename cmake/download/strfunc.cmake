@@ -15,8 +15,13 @@
 #=======================================================================================
 
 MESSAGE(STATUS "download strfunc")
-FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.hpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.hpp")
-FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.cpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.cpp")
+IF(NOT EXISTS "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.hpp")
+    FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.hpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.hpp")
+ENDIF()
+
+IF(NOT EXISTS "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.cpp")
+    FILE(DOWNLOAD "https://raw.githubusercontent.com/etorth/mir2x/master/common/src/strfunc.cpp" "${LIBNVC_3RD_PARTY_DIR}/download/strfunc/strfunc.cpp")
+ENDIF()
 MESSAGE(STATUS "download strfunc done, in ${LIBNVC_3RD_PARTY_DIR}/download/strfunc")
 
 SET(STRFUNC_INCLUDE_DIRS "${LIBNVC_3RD_PARTY_DIR}/download/strfunc")

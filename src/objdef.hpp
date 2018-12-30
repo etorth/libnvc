@@ -1,8 +1,8 @@
 /*
  * =====================================================================================
  *
- *       Filename: libnvc.hpp
- *        Created: 12/27/2018 04:52:17
+ *       Filename: typedef.hpp
+ *        Created: 12/30/2018 02:51:09
  *    Description: 
  *
  *        Version: 1.0
@@ -17,13 +17,11 @@
  */
 
 #pragma once
+#include <string>
+#include <variant>
+#include <cstdint>
 
-#include "valdef.hpp"
-#include "objdef.hpp"
-#include "typedef.hpp"
-
-#include "socket.hpp"
-#include "asiosocket.hpp"
-
-#include "apiclient.hpp"
-#include "guiclient.hpp"
+namespace libnvc
+{
+    using object = std::variant<std::string, int64_t, bool>;
+}

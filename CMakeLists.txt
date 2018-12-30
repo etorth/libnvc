@@ -26,10 +26,6 @@ ELSE()
     MESSAGE(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support.")
 ENDIF()
 
-# enable/disable condcheck()
-# cmake disble assert() if in release mode
-# ADD_DEFINITIONS(-DCONDCHECK)
-
 # add flags to release mode
 # by default won't use release mode
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS}")
@@ -86,9 +82,3 @@ ENDFOREACH()
 
 SET(CMAKE_SKIP_RPATH TRUE)
 ADD_SUBDIRECTORY(src)
-
-OPTION(LIBNVC_BUILD_SAMPLE "Enable sample projects" OFF)
-IF(LIBNVC_BUILD_SAMPLE)
-    MESSAGE(STATUS "Sample projects enabled")
-    ADD_SUBDIRECTORY(sample)
-ENDIF()

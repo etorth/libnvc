@@ -21,6 +21,7 @@
 #include "mpack.h"
 #include "libnvc.hpp"
 #include "strfunc.hpp"
+#include "mpinterf.hpp"
 #include "apiclient.hpp"
 
 namespace libnvc
@@ -84,6 +85,9 @@ libnvc::api_client::api_client(libnvc::socket *psocket)
     : m_decoder(std::make_unique<stream_decoder>(psocket))
     , m_socket(psocket)
     , m_onresp()
+{}
+
+libnvc::api_client::~api_client()
 {}
 
 void libnvc::api_client::poll()

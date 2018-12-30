@@ -22,9 +22,8 @@
 #include <cstdint>
 #include <cinttypes>
 #include <functional>
-#include "libnvc.hpp"
 #include "socket.hpp"
-#include "mpinterf.hpp"
+#include "typedef.hpp"
 
 namespace libnvc
 {
@@ -49,7 +48,9 @@ namespace libnvc
             api_client(libnvc::socket *);
 
         public:
-            ~api_client() = default;
+            // seems I can't use the default dtor
+            // because of the incomplete type stream_decoder and unique_ptr
+            ~api_client();
 
         public:
             int64_t seqid(int64_t advanced)

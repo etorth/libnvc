@@ -19,7 +19,7 @@
 #pragma once
 #include <vector>
 #include <cstddef>
-#include "strfunc.hpp"
+#include <cstdint>
 
 namespace libnvc
 {
