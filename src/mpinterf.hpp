@@ -32,7 +32,7 @@ namespace libnvc
 {
     template<typename T> T mp_read(mpack_node_t);
 
-    template<typename T> void check_node_type(mpack_node_t node)
+    template<typename T> inline void check_node_type(mpack_node_t node)
     {
         auto tag = mpack_node_tag(node);
         switch(auto type = mpack_tag_type(&tag)){
@@ -63,29 +63,29 @@ namespace libnvc
         }
     }
 
-    template<> bool mp_read<bool>(mpack_node_t node)
+    template<> inline bool mp_read<bool>(mpack_node_t node)
     {
         return mpack_node_bool(node);
     }
 
-    template<> int64_t mp_read<int64_t>(mpack_node_t node)
+    template<> inline int64_t mp_read<int64_t>(mpack_node_t node)
     {
         return mpack_node_i64(node);
     }
 
-    template<> double mp_read<double>(mpack_node_t node)
+    template<> inline double mp_read<double>(mpack_node_t node)
     {
         return mpack_node_double(node);
     }
 
-    template<> std::string mp_read<std::string>(mpack_node_t node)
+    template<> inline std::string mp_read<std::string>(mpack_node_t node)
     {
         const char *str = mpack_node_str(node);
         size_t      len = mpack_node_strlen(node);
         return std::string(str, str + len);
     }
 
-    template<> libnvc::object mp_read<libnvc::object>(mpack_node_t node)
+    template<> inline libnvc::object mp_read<libnvc::object>(mpack_node_t node)
     {
         libnvc::object obj{};
         auto tag = mpack_node_tag(node);
@@ -109,12 +109,12 @@ namespace libnvc
         }
     }
 
-    template<> std::array<int64_t, 2> mp_read<std::array<int64_t, 2>>(mpack_node_t)
+    template<> inline std::array<int64_t, 2> mp_read<std::array<int64_t, 2>>(mpack_node_t)
     {
         return {0, 0};
     }
 
-    template<> std::map<std::string, libnvc::object> mp_read<std::map<std::string, libnvc::object>>(mpack_node_t node)
+    template<> inline std::map<std::string, libnvc::object> mp_read<std::map<std::string, libnvc::object>>(mpack_node_t node)
     {
         check_node_type<std::map<std::string, libnvc::object>>(node);
         const size_t size = mpack_node_map_count(node);

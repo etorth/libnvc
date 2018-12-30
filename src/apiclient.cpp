@@ -83,6 +83,7 @@ namespace libnvc
 
 libnvc::api_client::api_client(libnvc::socket *psocket)
     : m_decoder(std::make_unique<stream_decoder>(psocket))
+    , m_seqid(1)
     , m_socket(psocket)
     , m_onresp()
 {}

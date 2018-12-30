@@ -33,10 +33,10 @@ namespace libnvc
             class stream_decoder;
 
         private:
-            int64_t m_seqid;
+            std::unique_ptr<stream_decoder> m_decoder;
 
         private:
-            std::unique_ptr<stream_decoder> m_decoder;
+            int64_t m_seqid;
 
         private:
             libnvc::socket *m_socket;
@@ -88,7 +88,7 @@ namespace libnvc
 
                 m_onresp[msg_id] = [this, on_resp](libnvc::object result)
                 {
-                    on_resp(std::get<libnvc::req<reqid>::res_t>(result));
+                    on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
                 };
             }
 
