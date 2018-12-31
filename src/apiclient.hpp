@@ -61,12 +61,14 @@ namespace libnvc
         private:
             int64_t msgid(size_t req_id, int64_t seq_id)
             {
-                return (((int64_t)(req_id) & 0x000000000000ffff) << 48) | (seq_id & 0x0000ffffffffffff);
+                // put seq_id at hight bits
+                // this helps to make the key/value pairs sorted by sent time
+                return ((seq_id & 0x0000ffffffffffff) << 16) | ((int64_t)(req_id) & 0x000000000000ffff);
             }
 
             std::tuple<size_t, int64_t> msgid_decomp(int64_t msg_id)
             {
-                return {(size_t)(msg_id >> 48), msg_id & 0x0000ffffffffffff};
+                return {(size_t)(msg_id & 0x000000000000ffff), msg_id >> 16};
             }
 
         public:
