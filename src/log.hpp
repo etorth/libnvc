@@ -1,8 +1,8 @@
 /*
  * =====================================================================================
  *
- *       Filename: libnvc.hpp
- *        Created: 12/27/2018 04:52:17
+ *       Filename: log.hpp
+ *        Created: 12/31/2018 04:44:43
  *    Description: 
  *
  *        Version: 1.0
@@ -17,14 +17,16 @@
  */
 
 #pragma once
-
+#include <functional>
 #include "log.hpp"
-#include "valdef.hpp"
-#include "objdef.hpp"
-#include "typedef.hpp"
 
-#include "socket.hpp"
-#include "asiosocket.hpp"
+namespace libnvc
+{
+    constexpr int LOG_INFO    = 0;
+    constexpr int LOG_WARNING = 1;
+    constexpr int LOG_FATAL   = 2;
+    constexpr int LOG_DEBUG   = 3;
 
-#include "apiclient.hpp"
-#include "guiclient.hpp"
+    void log(int, const char *);
+    void set_log(std::function<void(int, const char *)>);
+}
