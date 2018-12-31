@@ -42,7 +42,8 @@ namespace libnvc
             libnvc::socket *m_socket;
 
         private:
-            std::map<int64_t, std::function<void(libnvc::object)>> m_onresp;
+            std::map<int64_t, std::function<void(libnvc::object)>>       m_onresp;
+            std::map<int64_t, std::function<void(int64_t, std::string)>> m_onresperr;
 
         public:
             api_client(libnvc::socket *);
@@ -53,45 +54,55 @@ namespace libnvc
             ~api_client();
 
         public:
+            int64_t seqid()
+            {
+                return m_seqid;
+            }
+
             int64_t seqid(int64_t advanced)
             {
                 return (m_seqid += advanced);
             }
 
         private:
-            int64_t msgid(size_t req_id, int64_t seq_id)
+            static int64_t msgid(size_t req_id, int64_t seq_id)
             {
                 // put seq_id at hight bits
                 // this helps to make the key/value pairs sorted by sent time
                 return ((seq_id & 0x0000ffffffffffff) << 16) | ((int64_t)(req_id) & 0x000000000000ffff);
             }
 
-            std::tuple<size_t, int64_t> msgid_decomp(int64_t msg_id)
+            static std::tuple<size_t, int64_t> msgid_decomp(int64_t msg_id)
             {
                 return {(size_t)(msg_id & 0x000000000000ffff), msg_id >> 16};
             }
 
         public:
-            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void(typename libnvc::req<reqid>::res_t)> on_resp)
+            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void(typename libnvc::req<reqid>::res_t)> on_resp, std::function<void(int64_t, std::string)> on_resperr = [](int64_t, std::string){})
             {
                 int64_t seq_id = seqid(1);
                 int64_t msg_id = msgid(reqid, seq_id);
 
-                auto bytestream = parms.pack(msg_id);
-                m_socket->send(bytestream.data(), bytestream.length());
+                auto pkres = parms.pack(msg_id);
+                m_socket->send(pkres.data(), pkres.length());
 
-                if(!on_resp){
-                    return;
+                if(on_resp){
+                    if(m_onresp.find(msg_id) != m_onresp.end()){
+                        throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                    }
+
+                    m_onresp[msg_id] = [this, on_resp](libnvc::object result)
+                    {
+                        on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
+                    };
                 }
 
-                if(m_onresp.find(msg_id) != m_onresp.end()){
-                    throw std::runtime_error(((std::string(": req already has response hander: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                if(on_resperr){
+                    if(m_onresperr.find(msg_id) != m_onresperr.end()){
+                        throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                    }
+                    m_onresperr[msg_id] = on_resperr;
                 }
-
-                m_onresp[msg_id] = [this, on_resp](libnvc::object result)
-                {
-                    on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
-                };
             }
 
         public:

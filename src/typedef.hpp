@@ -160,3 +160,10 @@ namespace libnvc
         }
     };
 }
+
+namespace libnvc
+{
+    // I can make this function constexpr but don't
+    // in compile time check std::is_void<libnvc::req<libnvc::reqid("xxxx")>::res_t>>::value
+    bool has_return(size_t);
+}

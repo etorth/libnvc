@@ -87,3 +87,17 @@ std::string libnvc::req<libnvc::reqid("nvim_input")>::parms_t::pack(int64_t msgi
 
     return buf;
 }
+
+bool libnvc::has_return(size_t reqid)
+{
+    switch(reqid){
+        case libnvc::reqid("nvim_input"):
+            {
+                return true;
+            }
+        default:
+            {
+                return false;
+            }
+    }
+}

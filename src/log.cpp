@@ -27,10 +27,10 @@
 static void default_log_func(int log_type, const char *log_str)
 {
     switch(log_type){
-        case libnvc::LOG_INFO    : std::printf(   "INFO: %s", log_str); return;
-        case libnvc::LOG_WARNING : std::printf("WARNING: %s", log_str); return;
-        case libnvc::LOG_FATAL   : std::printf(  "FATAL: %s", log_str); return;
-        case libnvc::LOG_DEBUG   : std::printf(  "DEBUG: %s", log_str); return;
+        case libnvc::LOG_INFO    : std::printf(   "INFO: %s\n", log_str); return;
+        case libnvc::LOG_WARNING : std::printf("WARNING: %s\n", log_str); return;
+        case libnvc::LOG_FATAL   : std::printf(  "FATAL: %s\n", log_str); return;
+        case libnvc::LOG_DEBUG   : std::printf(  "DEBUG: %s\n", log_str); return;
         default                  :                                      return;
     }
 }
