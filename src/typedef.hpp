@@ -21,6 +21,7 @@
 #include <variant>
 #include "ctf.hpp"
 #include "valdef.hpp"
+#include "objdef.hpp"
 #include "typedef.hpp"
 
 namespace libnvc
@@ -36,6 +37,7 @@ namespace libnvc
         // requests
         "req::nvim_buf_line_count",
         "req::nvim_input",
+        "req::nvim_buf_set_name",
         "req::buffer_get_line",
 
         // notifications
@@ -158,6 +160,45 @@ namespace libnvc
         {
             return libnvc::idstr(id());
         }
+    };
+
+    template<> struct req<libnvc::reqid("nvim_buf_set_name")>
+    {
+        using parms_t = struct
+        {
+            int64_t buffer;
+            std::string name;
+            std::string pack(int64_t msgid) const;
+        };
+
+        using res_t = void;
+
+        constexpr int since() const
+        {
+            return 1;
+        }
+
+        constexpr int deprecated() const
+        {
+            return 0;
+        }
+
+        constexpr auto id() const
+        {
+            return libnvc::strid("req::nvim_buf_set_name");
+        }
+
+        constexpr auto name() const
+        {
+            return libnvc::idstr(id());
+        }
+    };
+}
+
+namespace libnvc
+{
+    template<size_t reqid> struct reqcb_t
+    {
     };
 }
 

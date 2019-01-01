@@ -22,7 +22,9 @@
 #include <cstdint>
 #include <cinttypes>
 #include <functional>
+#include <type_traits>
 #include "socket.hpp"
+#include "objdef.hpp"
 #include "typedef.hpp"
 
 namespace libnvc
@@ -93,7 +95,40 @@ namespace libnvc
 
                     m_onresp[msg_id] = [this, on_resp](libnvc::object result)
                     {
-                        on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
+                        if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
+                            on_resp();
+                        }else{
+                            on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
+                        }
+                    };
+                }
+
+                if(on_resperr){
+                    if(m_onresperr.find(msg_id) != m_onresperr.end()){
+                        throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                    }
+                    m_onresperr[msg_id] = on_resperr;
+                }
+            }
+
+            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void()> on_resp, std::function<void(int64_t, std::string)> on_resperr = [](int64_t, std::string){})
+            {
+                static_assert(std::is_void_v<typename libnvc::req<reqid>::res_t>);
+
+                int64_t seq_id = seqid(1);
+                int64_t msg_id = msgid(reqid, seq_id);
+
+                auto pkres = parms.pack(msg_id);
+                m_socket->send(pkres.data(), pkres.length());
+
+                if(on_resp){
+                    if(m_onresp.find(msg_id) != m_onresp.end()){
+                        throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                    }
+
+                    m_onresp[msg_id] = [this, on_resp](libnvc::object)
+                    {
+                        on_resp();
                     };
                 }
 

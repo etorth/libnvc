@@ -88,6 +88,38 @@ std::string libnvc::req<libnvc::reqid("nvim_input")>::parms_t::pack(int64_t msgi
     return buf;
 }
 
+std::string libnvc::req<libnvc::reqid("nvim_buf_set_name")>::parms_t::pack(int64_t msgid) const
+{
+    char  *data = nullptr;
+    size_t size = 0;
+
+    mpack_writer_t writer;
+    mpack_writer_init_growable(&writer, &data, &size);
+
+    mpack_start_array(&writer, 4);
+    {
+        mp_write(&writer, libnvc::REQ);
+        mp_write(&writer, msgid);
+        mp_write(&writer, "nvim_buf_set_name");
+        mpack_start_array(&writer, 2);
+        {
+            mp_write(&writer, buffer);
+            mp_write(&writer, name);
+        }
+        mpack_finish_array(&writer);
+    }
+    mpack_finish_array(&writer);
+
+    if(mpack_writer_destroy(&writer) != mpack_ok){
+        throw std::runtime_error("failed to pack req::nvim_buf_set_name");
+    }
+
+    std::string buf{data, data + size};
+    MPACK_FREE(data);
+
+    return buf;
+}
+
 bool libnvc::has_return(size_t reqid)
 {
     switch(reqid){

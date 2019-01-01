@@ -203,6 +203,12 @@ void libnvc::api_client::poll()
                                 m_onresp.erase(msgid);
                                 break;
                             }
+                        case libnvc::reqid("nvim_buf_set_name"):
+                            {
+                                m_onresp[msgid](libnvc::object(libnvc::void_t()));
+                                m_onresp.erase(msgid);
+                                break;
+                            }
                     }
                     break;
                 }

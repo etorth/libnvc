@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename: typedef.hpp
+ *       Filename: objdef.hpp
  *        Created: 12/30/2018 02:51:09
  *    Description: 
  *
@@ -23,5 +23,11 @@
 
 namespace libnvc
 {
-    using object = std::variant<std::string, int64_t, bool>;
+    struct void_type
+    {
+        int unused = 0;
+    };
+
+    using void_t = struct void_type;
+    using object = std::variant<libnvc::void_t, std::string, int64_t, bool>;
 }
