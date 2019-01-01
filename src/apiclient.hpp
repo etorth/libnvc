@@ -56,14 +56,15 @@ namespace libnvc
             ~api_client();
 
         public:
-            int64_t seqid()
+            int64_t seqid() const
             {
                 return m_seqid;
             }
 
-            int64_t seqid(int64_t advanced)
+        private:
+            void add_seqid(int64_t add)
             {
-                return (m_seqid += advanced);
+                m_seqid += add;
             }
 
         private:
@@ -79,18 +80,13 @@ namespace libnvc
                 return {(size_t)(msg_id & 0x000000000000ffff), msg_id >> 16};
             }
 
-        public:
-            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void(typename libnvc::req<reqid>::res_t)> on_resp, std::function<void(int64_t, std::string)> on_resperr = [](int64_t, std::string){})
+        private:
+            template<size_t reqid, typename on_resp_t> inline void regcb_resp(on_resp_t on_resp)
             {
-                int64_t seq_id = seqid(1);
-                int64_t msg_id = msgid(reqid, seq_id);
-
-                auto pkres = parms.pack(msg_id);
-                m_socket->send(pkres.data(), pkres.length());
-
-                if(on_resp){
+                auto msg_id = msgid(reqid, seqid());
+                if(true /* on_resp */){
                     if(m_onresp.find(msg_id) != m_onresp.end()){
-                        throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                        throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seqid()));
                     }
 
                     m_onresp[msg_id] = [this, on_resp](libnvc::object result)
@@ -102,42 +98,34 @@ namespace libnvc
                         }
                     };
                 }
+            }
 
-                if(on_resperr){
+            template<size_t reqid, typename on_resperr_t> inline void regcb_resperr(on_resperr_t on_resperr)
+            {
+                auto msg_id = msgid(reqid, seqid());
+                if(true /* on_resperr */){
                     if(m_onresperr.find(msg_id) != m_onresperr.end()){
-                        throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
+                        throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seqid()));
                     }
                     m_onresperr[msg_id] = on_resperr;
                 }
             }
 
-            template<size_t reqid> inline void forward(typename libnvc::req<reqid>::parms_t parms, std::function<void()> on_resp, std::function<void(int64_t, std::string)> on_resperr = [](int64_t, std::string){})
+        public:
+            template<size_t reqid, typename on_resp_t> inline void forward(typename libnvc::req<reqid>::parms_t parms, on_resp_t on_resp)
             {
-                static_assert(std::is_void_v<typename libnvc::req<reqid>::res_t>);
+                add_seqid(1);
+                m_socket->send(parms.pack(msgid(reqid, seqid())));
+                regcb_resp<reqid, on_resp_t>(on_resp);
+            }
 
-                int64_t seq_id = seqid(1);
-                int64_t msg_id = msgid(reqid, seq_id);
+            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline void forward(typename libnvc::req<reqid>::parms_t parms, on_resp_t on_resp, on_resperr_t on_resperr)
+            {
+                add_seqid(1);
+                m_socket->send(parms.pack(msgid(reqid, seqid())));
 
-                auto pkres = parms.pack(msg_id);
-                m_socket->send(pkres.data(), pkres.length());
-
-                if(on_resp){
-                    if(m_onresp.find(msg_id) != m_onresp.end()){
-                        throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
-                    }
-
-                    m_onresp[msg_id] = [this, on_resp](libnvc::object)
-                    {
-                        on_resp();
-                    };
-                }
-
-                if(on_resperr){
-                    if(m_onresperr.find(msg_id) != m_onresperr.end()){
-                        throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seq_id));
-                    }
-                    m_onresperr[msg_id] = on_resperr;
-                }
+                regcb_resp<reqid, on_resp_t>(on_resp);
+                regcb_resperr<reqid, on_resperr_t>(on_resperr);
             }
 
         public:

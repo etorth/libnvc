@@ -18,6 +18,7 @@
 
 #pragma once
 #include <vector>
+#include <string>
 #include <cstddef>
 #include <cstdint>
 
@@ -38,5 +39,11 @@ namespace libnvc
         public:
             virtual size_t send(const char *, size_t) = 0; // blocking send, return after done all bytes
             virtual size_t recv(      char *, size_t) = 0;
+
+        public:
+            size_t send(std::string s)
+            {
+                return send(s.data(), s.length());
+            }
     };
 }

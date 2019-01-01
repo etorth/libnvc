@@ -33,10 +33,13 @@ int main()
         libnvc::log(libnvc::LOG_INFO, buf);
     });
 
-    // client.forward<libnvc::reqid("nvim_get_current_line")>([](std::string s)
-    // {
-    //     std::cout << "return: " << s << std::endl;
-    // });
+    client.forward<libnvc::reqid("nvim_buf_set_name")>({1, "1234"}, []()
+    {
+        libnvc::log(libnvc::LOG_INFO, "nvim_buf_set_name done");
+    }, [](int64_t ec, std::string emsg)
+    {
+        std::printf("nvim reports error: [%d, %s]", (int)(ec), emsg.c_str());
+    });
 
     while(true){
         client.poll();
