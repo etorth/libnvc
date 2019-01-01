@@ -160,10 +160,6 @@ void libnvc::api_client::poll()
                         throw std::runtime_error(str_printf("RESP to invalid REQ: %" PRIi64, req_id));
                     }
 
-                    if(!libnvc::has_return(req_id)){
-                        throw std::runtime_error(str_printf("RESP to an non-return REQ: %zu", req_id));
-                    }
-
                     if(seq_id <= 0){
                         throw std::runtime_error(str_printf("RESP with invalid seq_id: %" PRIi64, seq_id));
                     }
@@ -185,8 +181,7 @@ void libnvc::api_client::poll()
                         return;
                     }
 
-
-                    // we get RESP with valid return value
+                    // we get valid RESP, for non-return REQ nvim just returns nil
                     // need dispatch to different response handler
 
                     if(m_onresp.find(msgid) == m_onresp.end()){
