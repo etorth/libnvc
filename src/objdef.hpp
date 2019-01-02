@@ -23,11 +23,11 @@
 
 namespace libnvc
 {
-    struct void_type
+    struct nil_type
     {
         int unused = 0;
     };
 
-    using void_t = struct void_type;
-    using object = std::variant<libnvc::void_t, std::string, int64_t, bool>;
+    using nil_t = struct nil_type;
+    using object = std::variant<libnvc::nil_t, std::string, int64_t, bool>;
 }

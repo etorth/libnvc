@@ -14,33 +14,43 @@ import jinja2
 import shutil
 import datetime
 
-def decutf8(inp):
+def typeOut(typename, out):
+    """
+    Return const-ref if out is set
+    """
+    return typename if out else "const " + typename + " &"
+
+
+def decUTF8(inp):
     """
     Recursively decode bytes as utf8 into unicode
     """
     if isinstance(inp, bytes):
         return inp.decode('utf8')
     elif isinstance(inp, list):
-        return [decutf8(x) for x in inp]
+        return [decUTF8(x) for x in inp]
     elif isinstance(inp, dict):
-        return {decutf8(key): decutf8(val) for key, val in inp.items()}
+        return {decUTF8(key): decUTF8(val) for key, val in inp.items()}
     else:
         return inp
 
 
-def get_api_info(nvim):
+def getNvimAPI(nvim):
     """
     Call the neovim binary to get the api info
     """
     args = [nvim, '--api-info']
     info = subprocess.check_output(args)
-    return decutf8(msgpack.unpackb(info))
+    return decUTF8(msgpack.unpackb(info))
 
 
-def generate_file(name, template_dir, outfile, **kw):
+def renderFile(name, template_dir, outfile, **kw):
+
     from jinja2 import Environment, FileSystemLoader
-    env = Environment(loader=FileSystemLoader(template_dir), trim_blocks=True)
+
+    env = Environment(loader = FileSystemLoader(template_dir), trim_blocks = True)
     template = env.get_template(name)
+
     with open(outfile, 'w') as fp:
         fp.write(template.render(kw))
 
@@ -87,38 +97,38 @@ class UnsupportedType(Exception):
     pass
 
 
-class NeovimTypeVal:
+class nvimNativeType:
     """
     Representation for Neovim Parameter/Return
     """
 
     # msgpack simple types types
     SIMPLETYPES = {
-            'Integer': 'Long',
+            'Integer': 'int64_t',
             'Boolean': 'bool',
-            'Float': 'Double',
-            'Object': 'Object',
+            'Float'  : 'double',
+            'Object' : 'libnvc::object',
         }
 
     # msgpack extension types
     EXTTYPES = {
-            'Window': 'Long',
-            'Buffer': 'Long',
-            'Tabpage': 'Long',
+            'Window' : 'int64_t',
+            'Buffer' : 'int64_t',
+            'Tabpage': 'int64_t',
         }
 
     PAIRTYPE = 'ArrayOf(Integer, 2)'
 
     # Unbound Array types
     UNBOUND_ARRAY = re.compile('ArrayOf\(\s*(\w+)\s*\)')
-    ARRAY_OF = re.compile('ArrayOf\(\s*(\w+)\s*\)')
+    ARRAY_OF      = re.compile('ArrayOf\(\s*(\w+)\s*\)')
 
-    def __init__(self, typename, name='', out=False):
-        self.name = name
+    def __init__(self, typename, name = '', out = False):
+        self.name        = name
         self.neovim_type = typename
-        self.ext = False
-        self.native_type = NeovimTypeVal.nativeType(typename, out=out)
-        self.elemtype = None
+        self.native_type = nvimNativeType.nativeType(typename, out = out)
+        self.ext         = False
+        self.elemtype    = None
 
         if typename in self.SIMPLETYPES:
             pass
@@ -127,43 +137,51 @@ class NeovimTypeVal:
         elif self.UNBOUND_ARRAY.match(typename):
             m = self.UNBOUND_ARRAY.match(typename)
             self.elemtype = m.groups()[0]
-            self.native_elemtype = NeovimTypeVal.nativeType(self.elemtype, out=True)
+            self.native_elemtype = nvimNativeType.nativeType(self.elemtype, out=True)
         else:
-            self.native_type = NeovimTypeVal.nativeType(typename, out)
+            self.native_type = nvimNativeType.nativeType(typename, out)
 
         if typename == "Array":
             self.elemtype = "Object"
-            self.native_elemtype = NeovimTypeVal.nativeType("Object", out=True)
+            self.native_elemtype = nvimNativeType.nativeType("Object", out=True)
 
     @classmethod
-    def nativeType(cls, typename, out=False):
+    def nativeType(cls, typename, out = False):
+
         """Return the native type for this Neovim type."""
+
         if typename == 'void':
             return typename
+
         if typename == 'Array':
-            return 'Corrade::Containers::Array<Object>' if out else 'Corrade::Containers::ArrayView<Object>&'
+            return typeOut('std::vector<libnvc::object>', out)
+
         if typename == 'String':
-            return 'std::string' if out else 'const std::string&'
-        elif typename == 'Dictionary':
-            return 'std::unordered_map<std::string, Object>' if out else 'const std::unordered_map<std::string, Object>&'
-        elif typename in cls.SIMPLETYPES:
+            return typeOut('std::string', out)
+
+        if typename == 'Dictionary':
+            return typeOut('std::map<std::string, libnvc::object>', out)
+
+        if typename in cls.SIMPLETYPES:
             return cls.SIMPLETYPES[typename]
-        elif typename in cls.EXTTYPES:
+
+        if typename in cls.EXTTYPES:
             return cls.EXTTYPES[typename]
-        elif cls.UNBOUND_ARRAY.match(typename):
+
+        if cls.UNBOUND_ARRAY.match(typename):
             m = cls.UNBOUND_ARRAY.match(typename)
-            if out:
-                return 'Corrade::Containers::Array<%s>' % cls.nativeType(m.groups()[0], out=True)
-            else:
-                return 'Corrade::Containers::ArrayView<%s>' % cls.nativeType(m.groups()[0], out=True)
-        elif typename == cls.PAIRTYPE:
-            return 'Vector2i'
+            return typeOut('std::vector<%s>' % cls.nativeType(m.groups()[0], out = True), out)
+
+        if typename == cls.PAIRTYPE:
+            return typeOut('std::array<int64_t>')
+
         raise UnsupportedType(typename)
 
 
-class Function:
+class nvimCFunc:
     """
-    Representation of a Neovim API Function
+    Representation of a nvim api function
+    All functions obey C functions rule: it may take multiple inputs but at most one output
     """
 
     # Attributes names that we support, see src/function.c for details
@@ -177,9 +195,9 @@ class Function:
         self.parameters = []
         self.name =  self.fun['name']
         try:
-            self.return_type = NeovimTypeVal(self.fun['return_type'], out=True)
+            self.return_type = nvimNativeType(self.fun['return_type'], out=True)
             for param in self.fun['parameters']:
-                self.parameters.append(NeovimTypeVal(*param))
+                self.parameters.append(nvimNativeType(*param)
         except UnsupportedType as ex:
             print('Found unsupported type(%s) when adding function %s(), skipping' % (ex, self.name))
             return
@@ -204,7 +222,7 @@ class Function:
         return self.fun.get('deprecated_since', None)
 
     def unknown_attributes(self):
-        return set(self.fun.keys()) - Function.__KNOWN_ATTRIBUTES
+        return set(self.fun.keys()) - nvimCFunc.__KNOWN_ATTRIBUTES
 
     def real_signature(self):
         return '%s %s(%s)' % (self.return_type.native_type, self.name, self.argstring)
@@ -221,24 +239,23 @@ class Event:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate C++ API bindings for the Neovim msgpack-rpc API")
-    parser.add_argument("-n", "--nvim", help="path to nvim executable", default="nvim")
-    parser.add_argument("-t", "--template-dir", help="template directory", default="template")
-    parser.add_argument("-o", "--output", help="output directory", default=".")
+    parser = argparse.ArgumentParser(description="Generate C++ bindings for the Neovim msgpack-rpc API")
+    parser.add_argument("-n", "--nvim",            help="path to nvim executable", default="nvim")
+    parser.add_argument("-t", "--template-dir",    help="template directory", default="template")
+    parser.add_argument("-o", "--output",          help="output directory", default=".")
     parser.add_argument("-d", "--with-deprecated", help="generate deprecated functions", action="store_true")
-    args = parser.parse_args()
 
-    nvim = args.nvim
-    template_dir = args.template_dir
-    outpath = args.output
-    nvim_dir = os.path.dirname(shutil.which(nvim))
-    doc_dir = os.path.join(nvim_dir, "..", "share", "nvim", "runtime", "doc")
+    args            = parser.parse_args()
+    nvim            = args.nvim
+    template_dir    = args.template_dir
+    outpath         = args.output
+    nvim_dir        = os.path.dirname(shutil.which(nvim))
+    doc_dir         = os.path.join(nvim_dir, "..", "share", "nvim", "runtime", "doc")
     ui_doc_filename = os.path.join(doc_dir, "ui.txt")
-
-    events = parse_events(ui_doc_filename)
+    events          = parse_events(ui_doc_filename)
 
     try:
-        api = get_api_info(nvim)
+        api = getNvimAPI(nvim)
     except subprocess.CalledProcessError as ex:
         print(ex)
         sys.exit(-1)
@@ -258,7 +275,7 @@ def main():
     if not args.with_deprecated:
         api['functions'] = [f for f in api['functions'] if 'deprecated_since' not in f]
 
-    functions = [Function(f) for f in api['functions'] if f['name'] != 'vim_get_api_info']
+    functions = [nvimCFunc(f) for f in api['functions'] if f['name'] != 'vim_get_api_info']
     exttypes = {typename: info['id'] for typename, info in api['types'].items()}
     env = {'date': datetime.datetime.now(),
            'functions': [f for f in functions if f.valid],
@@ -276,9 +293,8 @@ def main():
         fname = '{}{}{}'.format(fname, api_level, fext)
         outfile = os.path.join(outpath, fname)
 
-        generate_file(name, template_dir, outfile, **env)
+        renderFile(name, template_dir, outfile, **env)
 
 
 if __name__ == '__main__':
     main()
-

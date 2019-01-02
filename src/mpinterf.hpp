@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <variant>
 #include <stdexcept>
+#include <type_traits>
 #include "mpack.h"
 #include "ctf.hpp"
 #include "valdef.hpp"
@@ -193,5 +194,17 @@ namespace libnvc
             mp_write(writer, e.second);
         }
         mpack_finish_map(writer);
+    }
+}
+
+namespace libnvc
+{
+    template<size_t reqid> inline libnvc::object make_object(mpack_node_t node)
+    {
+        if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
+            return libnvc::object(libnvc::nil_t());
+        }else{
+            return libnvc::object(libnvc::mp_read<typename libnvc::req<reqid>::res_t>(node));
+        }
     }
 }
