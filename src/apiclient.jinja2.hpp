@@ -70,7 +70,7 @@ namespace libnvc
         private:
             static int64_t msgid(size_t req_id, int64_t seq_id)
             {
-                // put seq_id at hight bits
+                // put seq_id at high bits
                 // this helps to make the key/value pairs sorted by sent time
                 return ((seq_id & 0x0000ffffffffffff) << 16) | ((int64_t)(req_id) & 0x000000000000ffff);
             }
@@ -130,5 +130,19 @@ namespace libnvc
 
         public:
             void poll();
+
+        public:
+{% for req in nvim_reqs %}
+            template<typename on_resp_t> void {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}, on_resp_t on_resp)
+            {
+                forward<libnvc::reqid("{{req.name}}")>(libnvc::req<libnvc::reqid("{{req.name}}")>::parms_t({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp);
+            }
+
+            template<typename on_resp_t, typename on_resperr_t> void {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}, on_resp_t on_resp, on_resperr_t on_resperr)
+            {
+                forward<libnvc::reqid("{{req.name}}")>(libnvc::req<libnvc::reqid("{{req.name}}")>::parms_t({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp, on_resperr);
+            }
+
+{% endfor %}
     };
 }

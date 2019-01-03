@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename: typedef.hpp
+ *       Filename: reqdef.jinja2.hpp
  *        Created: 12/28/2018 03:25:41
  *    Description: 
  *
@@ -123,29 +123,32 @@ namespace libnvc
     // for undefined i just trigger a compilation error
     template<size_t> struct req;
 
-    template<> struct req<libnvc::reqid("nvim_buf_line_count")>
+{% for req in nvim_reqs %}
+    template<> struct req<libnvc::reqid("{% req.name %}")>
     {
         using parms_t = struct
         {
-            int64_t buffer;
-            std::string_view pack(int64_t msgid) const;
+{% for arg in req.args %}
+            {{arg.type}} {{arg.name}};
+{% endfor %}
+            std::string pack(int64_t) const;
         };
 
-        using res_t = int64_t;
+        using res_t = {{req.return_type}};
 
         constexpr int since() const
         {
-            return 1;
+            return {{req.since}};
         }
 
         constexpr int deprecated() const
         {
-            return 0;
+            return {{req.deprecated}};
         }
 
         constexpr auto id() const
         {
-            return libnvc::strid("req::nvim_buf_line_count");
+            return libnvc::strid("req::{{req.name}}");
         }
 
         constexpr auto name() const
@@ -153,81 +156,5 @@ namespace libnvc
             return libnvc::idstr(id());
         }
     };
-
-    template<> struct req<libnvc::reqid("nvim_input")>
-    {
-        using parms_t = struct
-        {
-            std::string keys;
-            std::string pack(int64_t msgid) const;
-        };
-
-        using res_t = int64_t;
-
-        constexpr int since() const
-        {
-            return 1;
-        }
-
-        constexpr int deprecated() const
-        {
-            return 0;
-        }
-
-        constexpr auto id() const
-        {
-            return libnvc::strid("req::nvim_input");
-        }
-
-        constexpr auto name() const
-        {
-            return libnvc::idstr(id());
-        }
-    };
-
-    template<> struct req<libnvc::reqid("nvim_buf_set_name")>
-    {
-        using parms_t = struct
-        {
-            int64_t buffer;
-            std::string name;
-            std::string pack(int64_t msgid) const;
-        };
-
-        using res_t = void;
-
-        constexpr int since() const
-        {
-            return 1;
-        }
-
-        constexpr int deprecated() const
-        {
-            return 0;
-        }
-
-        constexpr auto id() const
-        {
-            return libnvc::strid("req::nvim_buf_set_name");
-        }
-
-        constexpr auto name() const
-        {
-            return libnvc::idstr(id());
-        }
-    };
-}
-
-namespace libnvc
-{
-    template<size_t reqid> struct reqcb_t
-    {
-    };
-}
-
-namespace libnvc
-{
-    // I can make this function constexpr but don't
-    // in compile time check std::is_void<libnvc::req<libnvc::reqid("xxxx")>::res_t>>::value
-    bool has_return(size_t);
+{% endfor %}
 }
