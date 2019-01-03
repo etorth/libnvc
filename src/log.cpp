@@ -31,7 +31,7 @@ static void default_log_func(int log_type, const char *log_str)
         case libnvc::LOG_WARNING : std::printf("WARNING: %s\n", log_str); return;
         case libnvc::LOG_FATAL   : std::printf(  "FATAL: %s\n", log_str); return;
         case libnvc::LOG_DEBUG   : std::printf(  "DEBUG: %s\n", log_str); return;
-        default                  :                                      return;
+        default                  :                                        return;
     }
 }
 
@@ -67,7 +67,7 @@ void libnvc::log(int log_type, const char *log_str)
             }
         default:
             {
-                g_log_func(libnvc::LOG_WARNING, str_printf("unknown log type (%d) with message: %s", log_type, log_str).c_str());
+                g_log_func(libnvc::LOG_WARNING, str_fflprintf("unknown log type (%d) with message: %s", log_type, log_str).c_str());
                 return;
             }
     }

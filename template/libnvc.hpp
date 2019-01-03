@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include "log.hpp"
 #include "valdef.hpp"
 #include "objdef.hpp"
@@ -28,6 +29,17 @@
 
 #include "apiclient.hpp"
 #include "guiclient.hpp"
+
+namespace libnvc
+{
+    constexpr int LOG_INFO    = 0;
+    constexpr int LOG_WARNING = 1;
+    constexpr int LOG_FATAL   = 2;
+    constexpr int LOG_DEBUG   = 3;
+
+    void log(int, const char *);
+    void set_log(std::function<void(int, const char *)>);
+}
 
 namespace libnvc::ctf
 {
@@ -242,4 +254,336 @@ namespace libnvc
     {% endif %}
 {% endfor %}
     >;
+}
+
+namespace libnvc
+{
+    class socket
+    {
+        public:
+            socket() = default;
+
+        public:
+            virtual ~socket() = default;
+
+        public:
+            virtual bool connect(const char *, int) = 0;
+            virtual void disconnect()               = 0;
+
+        public:
+            virtual size_t send(const char *, size_t) = 0; // blocking send, return after done all bytes
+            virtual size_t recv(      char *, size_t) = 0;
+
+        public:
+            size_t send(std::string s)
+            {
+                return send(s.data(), s.length());
+            }
+    };
+
+    class asio_socket: public libnvc::socket
+    {
+        private:
+            class asio_socket_impl;
+
+        private:
+            std::unique_ptr<asio_socket_impl> m_impl;
+
+        public:
+            asio_socket();
+
+        public:
+            virtual ~asio_socket();
+
+        public:
+            virtual bool connect(const char *, int);
+            virtual void disconnect();
+
+        public:
+            virtual size_t send(const char *, size_t);
+            virtual size_t recv(      char *, size_t);
+    };
+}
+
+namespace libnvc
+{
+    constexpr int64_t REQ   = 0;
+    constexpr int64_t RESP  = 1;
+    constexpr int64_t NOTIF = 2;
+}
+
+namespace libnvc::mpinterf
+{
+    class writer
+    {
+        private:
+            constexpr size_t m_writer_size = []()
+            {
+#ifdef LIBNVC_MPACK_WRITER_SIZE
+                return LIBNVC_MPACK_WRITER_SIZE;
+#else
+                return 128;
+#endif
+            };
+
+            constexpr size_t m_writer_align = []()
+            {
+#ifdef LIBNVC_MPACK_WRITER_ALIGN
+                return LIBNVC_MPACK_WRITER_ALIGN;
+#else
+                return 16;
+#endif
+            };
+
+        private:
+            std::aligned_storage_t<m_writer_size, m_writer_align> m_storage;
+
+        private:
+            // need this helper variable to record if writer alive
+            // there is no official way to track if the writer called mpack_writer_destroy()
+            bool m_writer_alive;
+
+        private:
+            char  *m_data;
+            size_t m_size;
+
+        public:
+            writer();
+
+        public:
+            ~writer();
+
+        private:
+            void *storage()
+            {
+                return &m_storage;
+            }
+
+        private:
+            void flush();
+
+        private:
+            void clear();
+
+        private:
+            std::string_view pack();
+
+        private:
+            template<typename T, typename... U> void write(T t, U... u)
+            {
+                write(t);
+                if(sizeof...(u) != 0){
+                    write(u...);
+                }
+            }
+
+            template<typename... Args> void write(const std::tuple<Args...> args)
+            {
+                std::apply(&(libnvc::mpinterf::writer::write), args);
+            }
+
+        private:
+            void write();
+            void write(double);
+            void write(int64_t);
+            void write(const char *);
+            void write(const std::string&);
+            void write(const libnvc::object&);
+            void write(const std::array<int64_t, 2> &);
+            void write(const std::map<std::string, libnvc::object>&);
+
+        public:
+            template<typename Args... args> std::string_view pack_req(int64_t msgid, Args... args)
+            {
+                auto [req_id, seq_id] = msgid_decomp(msgid);
+
+                clear();
+                start_array(4);
+                {
+                    write(libnvc::REQ);
+                    write(msgid);
+                    write(libnvc::reqstr(req_id));
+                    start_array(1);
+                    {
+                        write(args...);
+                    }
+                    finish_array();
+
+                }
+                finish_array(4);
+                return pack();
+            }
+    };
+}
+
+namespace libnvc
+{
+    template<size_t> struct req;
+
+{% for req in nvim_reqs %}
+    template<> struct req<libnvc::reqid("{{req.name}}")>
+    {
+        using parms_tuple = std::tuple<
+{% for arg in req.args %}
+            {{arg.type}}{% if not loop.last %},{% endif %} 
+{% endfor %}
+        >;
+
+        using result_type = {{req.return_type}};
+
+        constexpr int since() const
+        {
+            return {{req.since}};
+        }
+
+        constexpr size_t id() const
+        {
+            return libnvc::strid("req::{{req.name}}");
+        }
+
+        constexpr const char *name() const
+        {
+            return "{{req.name}}";
+        }
+    };
+{% endfor %}
+}
+
+namespace libnvc
+{
+    template<size_t reqid> inline libnvc::object make_object(mpack_node_t node)
+    {
+        if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
+            return libnvc::object(libnvc::nil_t());
+        }else{
+            return libnvc::object(libnvc::mp_read<typename libnvc::req<reqid>::res_t>(node));
+        }
+    }
+}
+
+namespace libnvc
+{
+    class api_client
+    {
+        private:
+            class stream_decoder;
+
+        private:
+            std::unique_ptr<stream_decoder> m_decoder;
+
+        private:
+            int64_t m_seqid;
+
+        private:
+            libnvc::socket *m_socket;
+
+        private:
+            std::map<int64_t, std::function<void(libnvc::object)>>       m_onresp;
+            std::map<int64_t, std::function<void(int64_t, std::string)>> m_onresperr;
+
+        public:
+            api_client(libnvc::socket *);
+
+        public:
+            // seems I can't use the default dtor
+            // because of the incomplete type stream_decoder and unique_ptr
+            ~api_client();
+
+        public:
+            int64_t seqid() const
+            {
+                return m_seqid;
+            }
+
+        private:
+            void add_seqid(int64_t add)
+            {
+                m_seqid += add;
+            }
+
+        private:
+            static int64_t msgid(size_t req_id, int64_t seq_id)
+            {
+                // put seq_id at high bits
+                // this helps to make the key/value pairs sorted by sent time
+                return ((seq_id & 0x0000ffffffffffff) << 16) | ((int64_t)(req_id) & 0x000000000000ffff);
+            }
+
+            static std::tuple<size_t, int64_t> msgid_decomp(int64_t msg_id)
+            {
+                return {(size_t)(msg_id & 0x000000000000ffff), msg_id >> 16};
+            }
+
+        private:
+            template<size_t reqid, typename on_resp_t> inline void regcb_resp(on_resp_t on_resp)
+            {
+                auto msg_id = msgid(reqid, seqid());
+                if(true /* on_resp */){
+                    if(m_onresp.find(msg_id) != m_onresp.end()){
+                        throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seqid()));
+                    }
+
+                    m_onresp[msg_id] = [this, on_resp](libnvc::object result)
+                    {
+                        if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
+                            on_resp();
+                        }else{
+                            on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
+                        }
+                    };
+                }
+            }
+
+            template<size_t reqid, typename on_resperr_t> inline void regcb_resperr(on_resperr_t on_resperr)
+            {
+                auto msg_id = msgid(reqid, seqid());
+                if(true /* on_resperr */){
+                    if(m_onresperr.find(msg_id) != m_onresperr.end()){
+                        throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seqid()));
+                    }
+                    m_onresperr[msg_id] = on_resperr;
+                }
+            }
+
+        public:
+            template<size_t reqid, typename on_resp_t> inline void forward(typename libnvc::req<reqid>::parms_t parms, on_resp_t on_resp)
+            {
+                add_seqid(1);
+                m_socket->send(parms.pack(msgid(reqid, seqid())));
+                regcb_resp<reqid, on_resp_t>(on_resp);
+            }
+
+            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline void forward(typename libnvc::req<reqid>::parms_t parms, on_resp_t on_resp, on_resperr_t on_resperr)
+            {
+                add_seqid(1);
+                m_socket->send(parms.pack(msgid(reqid, seqid())));
+
+                regcb_resp<reqid, on_resp_t>(on_resp);
+                regcb_resperr<reqid, on_resperr_t>(on_resperr);
+            }
+
+        public:
+            void poll();
+
+        public:
+{% for req in nvim_reqs %}
+            template<typename on_resp_t> void {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}, on_resp_t on_resp)
+            {
+                forward<libnvc::reqid("{{req.name}}")>(libnvc::req<libnvc::reqid("{{req.name}}")>::parms_t({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp);
+            }
+
+            template<typename on_resp_t, typename on_resperr_t> void {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}, on_resp_t on_resp, on_resperr_t on_resperr)
+            {
+                forward<libnvc::reqid("{{req.name}}")>(libnvc::req<libnvc::reqid("{{req.name}}")>::parms_t({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp, on_resperr);
+            }
+
+{% endfor %}
+    };
+}
+
+namespace libnvc
+{
+    class gui_client: public api_client
+    {
+    };
 }

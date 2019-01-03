@@ -85,6 +85,104 @@ namespace libnvc
     };
 }
 
+template<typename T> T mp_read(mpack_node_t);
+
+template<typename T> inline void check_node_type(mpack_node_t node)
+{
+    auto tag = mpack_node_tag(node);
+    switch(auto type = mpack_tag_type(&tag)){
+        case mpack_type_str:
+            {
+                if(!std::is_same_v<T, std::string>){
+                    throw std::runtime_error("node is not a std::string");
+                }
+                break;
+            }
+        case mpack_type_int:
+            {
+                if(!std::is_same_v<T, int64_t>){
+                    throw std::runtime_error("node is not a int64_t");
+                }
+                break;
+            }
+        case mpack_type_bool:
+            {
+                if(!std::is_same_v<T, bool>){
+                    throw std::runtime_error("node is not a bool");
+                }
+            }
+        default:
+            {
+                throw std::runtime_error(std::string("unsupport type: ") + std::to_string(type));
+            }
+    }
+}
+
+template<> inline bool mp_read<bool>(mpack_node_t node)
+{
+    return mpack_node_bool(node);
+}
+
+template<> inline int64_t mp_read<int64_t>(mpack_node_t node)
+{
+    return mpack_node_i64(node);
+}
+
+template<> inline double mp_read<double>(mpack_node_t node)
+{
+    return mpack_node_double(node);
+}
+
+template<> inline std::string mp_read<std::string>(mpack_node_t node)
+{
+    const char *str = mpack_node_str(node);
+    size_t      len = mpack_node_strlen(node);
+    return std::string(str, str + len);
+}
+
+template<> inline libnvc::object mp_read<libnvc::object>(mpack_node_t node)
+{
+    libnvc::object obj{};
+    auto tag = mpack_node_tag(node);
+    switch(auto type = mpack_tag_type(&tag)){
+        case mpack_type_str:
+            {
+                return mp_read<std::string>(node);
+            }
+        case mpack_type_int:
+            {
+                return mp_read<int64_t>(node);
+            }
+        case mpack_type_bool:
+            {
+                return mp_read<bool>(node);
+            }
+        default:
+            {
+                throw std::runtime_error(std::string("unsupport type: ") + std::to_string(type));
+            }
+    }
+}
+
+template<> inline std::array<int64_t, 2> mp_read<std::array<int64_t, 2>>(mpack_node_t)
+{
+    return {0, 0};
+}
+
+template<> inline std::map<std::string, libnvc::object> mp_read<std::map<std::string, libnvc::object>>(mpack_node_t node)
+{
+    check_node_type<std::map<std::string, libnvc::object>>(node);
+    const size_t size = mpack_node_map_count(node);
+
+    std::map<std::string, libnvc::object> options;
+    for(size_t index = 0; index < size; ++index){
+        auto curr_key = mpack_node_map_key_at(node, index);
+        auto curr_val = mpack_node_map_value_at(node, index);
+        options[mp_read<std::string>(curr_key)] = mp_read<libnvc::object>(curr_val);
+    }
+    return options;
+}
+
 libnvc::api_client::api_client(libnvc::socket *psocket)
     : m_decoder(std::make_unique<stream_decoder>(psocket))
     , m_seqid(1)
@@ -124,11 +222,11 @@ static int64_t server_pack_type(mpack_node_t root)
 static void dispatch(size_t req_id, int64_t msg_id, mpack_node_t node, std::map<int64_t, libnvc::object> &on_resp)
 {
     switch(req_id){
-        {% for req in nvim_reqs %}
-        case libnvc::reqid("{{ req.name }}"):
+{% for req in nvim_reqs %}
+        case libnvc::reqid("{{req.name}}"):
             {
-                on_resp[msg_id](libnvc::make_object<libnvc::reqid("{{ req.name }}")>(node));
-        {% endfor %}
+                on_resp[msg_id](libnvc::make_object<libnvc::reqid("{{req.name}}")>(node));
+{% endfor %}
                 on_resp.erase(msg_id);
                 break;
             }
