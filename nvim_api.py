@@ -166,8 +166,9 @@ class nvimReqNativeArg:
     """
 
     def __init__(self, type, name):
-        self.type = nvimNativeType.nativeType(type, out = False)
-        self.name = name
+        self.name     = name
+        self.type     = nvimNativeType.nativeType(type, out = False)
+        self.type_out = nvimNativeType.nativeType(type, out = True)
 
 
 class nvimReq:

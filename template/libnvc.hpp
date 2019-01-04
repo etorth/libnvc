@@ -436,7 +436,7 @@ namespace libnvc
     {
         using parms_tuple = std::tuple<
 {% for arg in req.args %}
-            {{arg.type}}{% if not loop.last %},{% endif %} 
+            {{arg.type_out}}{% if not loop.last %},{% endif %} 
 {% endfor %}
         >;
 
