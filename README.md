@@ -20,7 +20,7 @@ int main()
     client.nvim_buf_set_name(1, "1234");
 ```
 
-## build  
+### build  
 libnvc use asio and mpack internally but hiden by pimpl.  
 so there is zero dependenct for user's building environment.
 
