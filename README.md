@@ -1,7 +1,7 @@
 # libnvc
 
 another cpp nvim msgpack-rpc client.  
-nvim's rpc interface is convenient but not something you can understand in 10 minutes.
+nvim's rpc interface is convenient but not something you can finish in 10 minutes.
 
 ```cpp
 #include "libnvc.hpp"
