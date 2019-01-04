@@ -4,6 +4,7 @@ C++ source code generator to create bindings from nvim functions
 Based generate_bindings.py from https://github.com/Squareys/magnum-neovim-api
 """
 
+import uuid
 import filecmp
 import pprint
 import argparse
@@ -240,9 +241,11 @@ def main():
         pprint.pprint(nvim_raw)
 
     api_level = nvim_raw['version']['api_level'] if 'version' in nvim_raw else 0
+    build_signature = str(uuid.uuid4())
 
     print('**** Nvim path           : {}'.format(nvim))
     print('**** Nvim api level      : {}'.format(api_level))
+    print('**** Api build signature : {}'.format(build_signature))
     print('**** Jinja2 render input : {}'.format(template_dir))
     print('**** Jinja2 render output: {}'.format(outpath))
 
@@ -255,10 +258,11 @@ def main():
     nvimReq.KNOWN_ATTRIBUTES = findReqAttributes(nvim_raw)
 
     env = {
-            'api_level'   : api_level,
-            'date'        : datetime.datetime.now(),
-            'nvim_reqs'   : [nvimReq(f)   for f in nvim_raw['functions']],
-            'nvim_notifs' : [nvimNotif(e) for e in nvim_raw['ui_events']],
+            'api_level'       : api_level,
+            'build_signature' : build_signature,
+            'date'            : datetime.datetime.now(),
+            'nvim_reqs'       : [nvimReq(f)   for f in nvim_raw['functions']],
+            'nvim_notifs'     : [nvimNotif(e) for e in nvim_raw['ui_events']],
     }
 
     print()

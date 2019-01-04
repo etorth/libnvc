@@ -80,6 +80,7 @@ namespace libnvc::ctf
                 return 0;
             }
         }
+        return 0;
     }
 
     constexpr int chmemcmp(const char *mem1, const char *mem2, size_t size)
@@ -295,7 +296,7 @@ namespace libnvc
     };
 
     using void_type = struct _void_type;
-    using object = std::variant<int64_t, std::string>;
+    using object = std::variant<int64_t, bool, double, std::string>;
 
     using resp_variant = std::variant<libnvc::void_type,
 {% for result_type in nvim_reqs|map(attribute='return_type')|unique %}
@@ -487,6 +488,12 @@ namespace libnvc
             // because of the incomplete type stream_decoder and unique_ptr
             ~api_client();
 
+        private:
+            const char *build_signature() const
+            {
+                return "{{build_signature}}";
+            }
+
         public:
             int64_t seqid() const
             {
@@ -533,7 +540,7 @@ namespace libnvc
             }
 
         public:
-            template<size_t reqid, typename on_resp_t> inline int64_t forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp)
+            template<size_t reqid, typename on_resp_t> inline int64_t forward(const typename libnvc::req<reqid>::parms_tuple &parms, on_resp_t on_resp)
             {
                 add_seqid(1);
                 auto msgid = libnvc::msgid(reqid, seqid());
@@ -549,7 +556,7 @@ namespace libnvc
                 return msgid;
             }
 
-            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline int64_t forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp, on_resperr_t on_resperr)
+            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline int64_t forward(const typename libnvc::req<reqid>::parms_tuple &parms, on_resp_t on_resp, on_resperr_t on_resperr)
             {
                 add_seqid(1);
                 auto msgid = libnvc::msgid(reqid, seqid());

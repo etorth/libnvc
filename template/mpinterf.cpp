@@ -141,7 +141,7 @@ void libnvc::mpinterf::writer::write(const std::map<std::string, libnvc::object>
 
 void libnvc::mpinterf::writer::start_array(size_t n)
 {
-    mpack_start_array(reinterpret_cast<mpack_writer_t *>(storage()), 4);
+    mpack_start_array(reinterpret_cast<mpack_writer_t *>(storage()), n);
 }
 
 void libnvc::mpinterf::writer::finish_array()

@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 
+#include <cstring>
 #include <optional>
 #include <stdexcept>
 #include "mpack.h"
@@ -210,7 +211,12 @@ libnvc::api_client::api_client(libnvc::socket *psocket)
     , m_socket(psocket)
     , m_onresp()
     , m_onresperr()
-{}
+{
+    const char *lib_signature = "{{build_signature}}";
+    if(std::strcmp(lib_signature, build_signature()) != 0){
+        throw std::runtime_error(str_fflprintf(": Using incompatible header and lib: header = %s, lib = %s", build_signature(), lib_signature));
+    }
+}
 
 libnvc::api_client::~api_client()
 {}

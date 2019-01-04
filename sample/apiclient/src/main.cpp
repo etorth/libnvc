@@ -16,6 +16,10 @@
  * =====================================================================================
  */
 #include <cstdio>
+#include <cstdint>
+#include <cstddef>
+#include <cinttypes>
+#include <stdexcept>
 #include "libnvc.hpp"
 
 int main()
