@@ -86,79 +86,64 @@ namespace libnvc
 
 namespace
 {
-    template<typename T> T mp_read(mpack_node_t);
-
-    template<typename T> inline void check_node_type(mpack_node_t node)
+    void inline check_node_type(mpack_node_t node, mpack_type_t expected_type)
     {
-        auto tag = mpack_node_tag(node);
-        switch(auto type = mpack_tag_type(&tag)){
-            case mpack_type_str:
-                {
-                    if(!std::is_same_v<T, std::string>){
-                        throw std::runtime_error(str_fflprintf(": Invalid request for node std::string -> %s", typeid(T).name()));
-                    }
-                    break;
-                }
-            case mpack_type_int:
-                {
-                    if(!std::is_same_v<T, int64_t>){
-                        throw std::runtime_error(str_fflprintf(": Invalid request for node int64_t -> %s", typeid(T).name()));
-                    }
-                    break;
-                }
-            case mpack_type_bool:
-                {
-                    if(!std::is_same_v<T, bool>){
-                        throw std::runtime_error(str_fflprintf(": Invalid request for node bool -> %s", typeid(T).name()));
-                    }
-                }
-            default:
-                {
-                    throw std::runtime_error(str_fflprintf(": Unsupport type: %s", mpack_type_to_string(type)));
-                }
+        auto tag  = mpack_node_tag(node);
+        auto type = mpack_tag_type(&tag);
+
+        // FIXME: aliasing i64/u64
+        // nvim returns i64/u64 although it claims always i64
+        if(true 
+                && (         type == mpack_type_int ||          type == mpack_type_uint)
+                && (expected_type == mpack_type_int || expected_type == mpack_type_uint)){
+            return;
+        }
+
+        if(type != expected_type){
+            throw std::runtime_error(str_fflprintf(": Node type doesn't match: %s, expecting: %s", mpack_type_to_string(type), mpack_type_to_string(expected_type)));
         }
     }
 
+    template<typename T> T mp_read(mpack_node_t);
+
     template<> inline bool mp_read<bool>(mpack_node_t node)
     {
+        check_node_type(node, mpack_type_bool);
         return mpack_node_bool(node);
     }
 
     template<> inline int64_t mp_read<int64_t>(mpack_node_t node)
     {
+        check_node_type(node, mpack_type_int);
         return mpack_node_i64(node);
     }
 
     template<> inline double mp_read<double>(mpack_node_t node)
     {
+        check_node_type(node, mpack_type_double);
         return mpack_node_double(node);
     }
 
     template<> inline std::string mp_read<std::string>(mpack_node_t node)
     {
+        check_node_type(node, mpack_type_str);
         const char *str = mpack_node_str(node);
         size_t      len = mpack_node_strlen(node);
         return std::string(str, str + len);
     }
 
-    template<> inline std::vector<std::string> mp_read<std::vector<std::string>>(mpack_node_t)
+    template<> inline std::array<int64_t, 2> mp_read<std::array<int64_t, 2>>(mpack_node_t node)
     {
-        return {};
-    }
+        check_node_type(node, mpack_type_array);
+        size_t length = mpack_node_array_length(node);
+        if(length != 2){
+            throw std::runtime_error(str_fflprintf(": Try to read std::array<int64_t, 2> while mpack array size is %zu", length));
+        }
 
-    template<> inline std::vector<libnvc::object> mp_read<std::vector<libnvc::object>>(mpack_node_t)
-    {
-        return {};
-    }
-
-    template<> inline std::vector<int64_t> mp_read<std::vector<int64_t>>(mpack_node_t)
-    {
-        return {};
-    }
-
-    template<> inline std::vector<std::map<std::string, libnvc::object>> mp_read<std::vector<std::map<std::string, libnvc::object>>>(mpack_node_t)
-    {
-        return {};
+        std::array<int64_t, 2> res;
+        res[0] = mp_read<int64_t>(mpack_node_array_at(node, 0));
+        res[1] = mp_read<int64_t>(mpack_node_array_at(node, 1));
+        return res;
     }
 
     template<> inline libnvc::object mp_read<libnvc::object>(mpack_node_t node)
@@ -180,28 +165,63 @@ namespace
                 }
             default:
                 {
-                    throw std::runtime_error(std::string("unsupport type: ") + std::to_string(type));
+                    throw std::runtime_error(str_fflprintf(": Unsupport type: %s", mpack_type_to_string(type)));
                 }
         }
     }
 
-    template<> inline std::array<int64_t, 2> mp_read<std::array<int64_t, 2>>(mpack_node_t)
+    template<typename T> std::vector<T> mp_read_array(mpack_node_t node)
     {
-        return {0, 0};
+        check_node_type(node, mpack_type_array);
+
+        std::vector<T> res;
+        size_t length = mpack_node_array_length(node);
+
+        for(size_t index = 0; index < length; ++index){
+            auto curr_node = mpack_node_array_at(node, index);
+            res.push_back(mp_read<T>(curr_node));
+        }
+        return res;
+    }
+
+    template<typename K, typename V> inline std::map<K, V> mp_read_map(mpack_node_t node)
+    {
+        check_node_type(node, mpack_type_map);
+
+        std::map<K, V> res;
+        const size_t size = mpack_node_map_count(node);
+
+        for(size_t index = 0; index < size; ++index){
+            auto curr_key = mpack_node_map_key_at(node, index);
+            auto curr_val = mpack_node_map_value_at(node, index);
+            res[mp_read<K>(curr_key)] = mp_read<V>(curr_val);
+        }
+        return res;
+    }
+
+    template<> inline std::vector<std::string> mp_read<std::vector<std::string>>(mpack_node_t node)
+    {
+        return mp_read_array<std::string>(node);
+    }
+
+    template<> inline std::vector<libnvc::object> mp_read<std::vector<libnvc::object>>(mpack_node_t node)
+    {
+        return mp_read_array<libnvc::object>(node);
+    }
+
+    template<> inline std::vector<int64_t> mp_read<std::vector<int64_t>>(mpack_node_t node)
+    {
+        return mp_read_array<int64_t>(node);
+    }
+
+    template<> inline std::vector<std::map<std::string, libnvc::object>> mp_read<std::vector<std::map<std::string, libnvc::object>>>(mpack_node_t node)
+    {
+        return mp_read_array<std::map<std::string, libnvc::object>>(node);
     }
 
     template<> inline std::map<std::string, libnvc::object> mp_read<std::map<std::string, libnvc::object>>(mpack_node_t node)
     {
-        check_node_type<std::map<std::string, libnvc::object>>(node);
-        const size_t size = mpack_node_map_count(node);
-
-        std::map<std::string, libnvc::object> options;
-        for(size_t index = 0; index < size; ++index){
-            auto curr_key = mpack_node_map_key_at(node, index);
-            auto curr_val = mpack_node_map_value_at(node, index);
-            options[mp_read<std::string>(curr_key)] = mp_read<libnvc::object>(curr_val);
-        }
-        return options;
+        return mp_read_map<std::string, libnvc::object>(node);
     }
 }
 
