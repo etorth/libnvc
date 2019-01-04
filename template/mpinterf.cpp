@@ -29,6 +29,7 @@
 
 libnvc::mpinterf::writer::writer()
     : m_storage()
+    , m_writer_alive(false)
     , m_data(nullptr)
     , m_size(0)
 {
@@ -39,8 +40,7 @@ libnvc::mpinterf::writer::writer()
     static_assert(alignof(decltype(m_storage)) % alignof(mpack_writer_t) == 0, "aligned memory misaligned to mpack_writer_t, define bigger LIBNVC_MPACK_WRITER_ALIGN");
 
     new (storage()) mpack_writer_t();
-    mpack_writer_init_growable((mpack_writer_t *)(storage()), &m_data, &m_size);
-    m_writer_alive = true;
+    reset();
 }
 
 libnvc::mpinterf::writer::~writer()
@@ -77,6 +77,13 @@ void libnvc::mpinterf::writer::clear()
 
     m_data = nullptr;
     m_size = 0;
+}
+
+void libnvc::mpinterf::writer::reset()
+{
+    clear();
+    mpack_writer_init_growable((mpack_writer_t *)(storage()), &m_data, &m_size);
+    m_writer_alive = true;
 }
 
 void libnvc::mpinterf::writer::write()

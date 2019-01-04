@@ -152,7 +152,7 @@ namespace libnvc
             return nullptr;
         }
 
-        if(auto str = g_nvim_reserved_api_string_tbl[id]; libnvc::ctf::strncmp(str, "req::", 5)){
+        if(auto str = g_nvim_reserved_api_string_tbl[id]; libnvc::ctf::strncmp(str, "req::", 5) == 0){
             return str + 5;
         }
         return nullptr;
@@ -374,6 +374,7 @@ namespace libnvc::mpinterf
 
         private:
             void clear();
+            void reset();
 
         private:
             std::string_view pack();
@@ -408,7 +409,7 @@ namespace libnvc::mpinterf
                 if(seq_id <= 0){
                 }
 
-                clear();
+                reset();
                 start_array(4);
                 {
                     write(libnvc::REQ);
