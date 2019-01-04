@@ -251,6 +251,13 @@ template<size_t reqid> libnvc::resp_variant inn_make_resp_variant([[maybe_unused
     if constexpr (std::is_void_v<typename libnvc::req<reqid>::resp_type>){
         return libnvc::resp_variant(libnvc::void_type());
     }else{
+        // explicitly use resp_type to initialize resp_variant
+        // initialization of std::variant is error-prone, as an example:
+        //
+        //      std::variant<std::string, bool> x("abc");
+        //      std::cout << std::get<std::string>(x) << std::endl;
+        //
+        // here initialization of x will choose bool, and the std::get<> triggers exception...
         return libnvc::resp_variant(mp_read<typename libnvc::req<reqid>::resp_type>(node));
     }
 }
