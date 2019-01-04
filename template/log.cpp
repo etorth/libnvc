@@ -18,7 +18,7 @@
 
 #include <mutex>
 #include <cstdio>
-#include "log.hpp"
+#include "libnvc.hpp"
 #include "strfunc.hpp"
 
 // give a basic implementation

@@ -140,6 +140,26 @@ namespace
         return std::string(str, str + len);
     }
 
+    template<> inline std::vector<std::string> mp_read<std::vector<std::string>>(mpack_node_t)
+    {
+        return {};
+    }
+
+    template<> inline std::vector<libnvc::object> mp_read<std::vector<libnvc::object>>(mpack_node_t)
+    {
+        return {};
+    }
+
+    template<> inline std::vector<int64_t> mp_read<std::vector<int64_t>>(mpack_node_t)
+    {
+        return {};
+    }
+
+    template<> inline std::vector<std::map<std::string, libnvc::object>> mp_read<std::vector<std::map<std::string, libnvc::object>>>(mpack_node_t)
+    {
+        return {};
+    }
+
     template<> inline libnvc::object mp_read<libnvc::object>(mpack_node_t node)
     {
         libnvc::object obj{};
@@ -220,7 +240,7 @@ static int64_t server_pack_type(mpack_node_t root)
     return (int64_t)(mpack_node_uint(mpack_node_array_at(root, 0)));
 }
 
-template<size_t reqid> libnvc::resp_variant inn_make_resp_variant(mpack_node_t node)
+template<size_t reqid> libnvc::resp_variant inn_make_resp_variant([[maybe_unused]] mpack_node_t node)
 {
     if constexpr (std::is_void_v<typename libnvc::req<reqid>::resp_type>){
         return libnvc::resp_variant(libnvc::void_type());
@@ -229,7 +249,7 @@ template<size_t reqid> libnvc::resp_variant inn_make_resp_variant(mpack_node_t n
     }
 }
 
-static void inn_dispatch(size_t reqid, int64_t msgid, mpack_node_t node, std::map<int64_t, libnvc::object> &resp_pool)
+static void inn_dispatch(size_t reqid, int64_t msgid, mpack_node_t node, std::map<int64_t, std::function<void(libnvc::resp_variant)>> &resp_pool)
 {
     // there is no argument checking
     // only call this function in api_client::poll
@@ -245,89 +265,95 @@ static void inn_dispatch(size_t reqid, int64_t msgid, mpack_node_t node, std::ma
 {% endfor %}
         default:
             {
-                throw invalid_argument(str_fflprintf(": Invalid reqid: %zu", reqid));
+                throw std::invalid_argument(str_fflprintf(": Invalid reqid: %zu", reqid));
             }
     }
 }
 
-void libnvc::api_client::poll()
+int64_t libnvc::api_client::poll_one()
 {
-    for(auto rootopt = m_decoder->poll(); rootopt.has_value(); rootopt = m_decoder->poll()){
+    auto rootopt = m_decoder->poll();
+    if(!rootopt.has_value()){
+        return 0;
+    }
 
-        // seems no official way to check if the root is valid
-        // internally we can check if it equals to mpack_tree_nil_node(&m_tree)
-        log_server_pack_node(rootopt.value());
+    // seems no official way to check if the root is valid
+    // internally we can check if it equals to mpack_tree_nil_node(&m_tree)
+    log_server_pack_node(rootopt.value());
 
-        if(auto root_type = mpack_node_type(rootopt.value()); root_type != mpack_type_array){
-            throw std::runtime_error(str_fflprintf(": The msgpack from nvim server is not an array: %s", mpack_type_to_string(root_type)));
-        }
+    if(auto root_type = mpack_node_type(rootopt.value()); root_type != mpack_type_array){
+        throw std::runtime_error(str_fflprintf(": The msgpack from nvim server is not an array: %s", mpack_type_to_string(root_type)));
+    }
 
-        if(auto root_size = mpack_node_array_length(rootopt.value()); root_size < 1){
-            throw std::runtime_error("The msgpack from nvim server is an empty array");
-        }
+    if(auto root_size = mpack_node_array_length(rootopt.value()); root_size < 1){
+        throw std::runtime_error("The msgpack from nvim server is an empty array");
+    }
 
-        if(auto first_node_type = mpack_node_type(mpack_node_array_at(rootopt.value(), 0)); first_node_type != mpack_type_uint){
-            throw std::runtime_error(str_fflprintf("mpack from nvim server has first node type %s, expect mpack_type_uint", mpack_type_to_string(first_node_type)));
-        }
+    if(auto first_node_type = mpack_node_type(mpack_node_array_at(rootopt.value(), 0)); first_node_type != mpack_type_uint){
+        throw std::runtime_error(str_fflprintf("mpack from nvim server has first node type %s, expect mpack_type_uint", mpack_type_to_string(first_node_type)));
+    }
 
-        switch(auto msg_type = server_pack_type(rootopt.value())){
-            case libnvc::REQ:
-                {
-                    break;
+    switch(auto msg_type = server_pack_type(rootopt.value())){
+        case libnvc::REQ:
+            {
+                return 0;
+            }
+        case libnvc::RESP:
+            {
+                if(size_t array_size = mpack_node_array_length(rootopt.value()); array_size != 4){
+                    throw std::runtime_error(str_fflprintf("RESP array size is not 4: %zu", array_size));
                 }
-            case libnvc::RESP:
-                {
-                    if(size_t array_size = mpack_node_array_length(rootopt.value()); array_size != 4){
-                        throw std::runtime_error(str_fflprintf("RESP array size is not 4: %zu", array_size));
-                    }
 
-                    int64_t msgid = mpack_node_i64(mpack_node_array_at(rootopt.value(), 1));
-                    auto [req_id, seq_id] = msgid_decomp(msgid);
-                    libnvc::log(libnvc::LOG_INFO, str_fflprintf("req_id = %s, seq_id = %" PRIi64, libnvc::idstr(req_id), seq_id).c_str());
+                int64_t msgid = mpack_node_i64(mpack_node_array_at(rootopt.value(), 1));
+                auto [req_id, seq_id] = msgid_decomp(msgid);
+                libnvc::log(libnvc::LOG_INFO, str_fflprintf("req_id = %s, seq_id = %" PRIi64, libnvc::idstr(req_id), seq_id).c_str());
 
-                    if(libnvc::idstr(req_id) == nullptr){
-                        throw std::runtime_error(str_fflprintf("RESP to invalid REQ: %" PRIi64, req_id));
-                    }
-
-                    if(seq_id <= 0){
-                        throw std::runtime_error(str_fflprintf("RESP with invalid seq_id: %" PRIi64, seq_id));
-                    }
-
-                    if(auto errnode = mpack_node_array_at(rootopt.value(), 2); !mpack_node_is_nil(errnode)){
-                        if(size_t errnode_size = mpack_node_array_length(errnode); errnode_size != 2){
-                            throw std::runtime_error(str_fflprintf("RESP error array [type, message] has invalid size: %zu", errnode_size));
-                        }
-
-                        int64_t          ec = mpack_node_i64(mpack_node_array_at(errnode, 0));
-                        const char *msg_ptr = mpack_node_str(mpack_node_array_at(errnode, 1));
-                        size_t      msg_len = mpack_node_strlen(mpack_node_array_at(errnode, 1));
-
-                        if(auto p = m_onresperr.find(msgid); p != m_onresperr.end()){
-                            (p->second)(ec, std::string(msg_ptr, msg_len));
-                            m_onresperr.erase(p);
-                        }
-                        m_onresp.erase(msgid);
-                        return;
-                    }
-
-                    // we get valid RESP, for non-return REQ nvim just returns nil
-                    // need inn_dispatch to different response handler
-
-                    if(m_onresp.find(msgid) == m_onresp.end()){
-                        return;
-                    }
-
-                    inn_dispatch(req_id, msgid, mpack_node_array_at(rootopt.value(), 3), m_onresp);
-                    break;
+                if(libnvc::idstr(req_id) == nullptr){
+                    throw std::runtime_error(str_fflprintf("RESP to invalid REQ: %" PRIi64, req_id));
                 }
-            case libnvc::NOTIF:
-                {
-                    break;
+
+                if(seq_id <= 0){
+                    throw std::runtime_error(str_fflprintf("RESP with invalid seq_id: %" PRIi64, seq_id));
                 }
-            default:
-                {
-                    throw std::runtime_error(str_fflprintf("mpack from nvim server has message type: %d, expect [REQ, RESP, NOTIF]: %d", (int)(msg_type)));
+
+                if(auto errnode = mpack_node_array_at(rootopt.value(), 2); !mpack_node_is_nil(errnode)){
+                    if(size_t errnode_size = mpack_node_array_length(errnode); errnode_size != 2){
+                        throw std::runtime_error(str_fflprintf("RESP error array [type, message] has invalid size: %zu", errnode_size));
+                    }
+
+                    int64_t          ec = mpack_node_i64(mpack_node_array_at(errnode, 0));
+                    const char *msg_ptr = mpack_node_str(mpack_node_array_at(errnode, 1));
+                    size_t      msg_len = mpack_node_strlen(mpack_node_array_at(errnode, 1));
+
+                    if(auto p = m_onresperr.find(msgid); p != m_onresperr.end()){
+                        (p->second)(ec, std::string(msg_ptr, msg_len));
+                        m_onresperr.erase(p);
+                    }
+                    m_onresp.erase(msgid);
+                    return msgid;
                 }
-        }
+
+                // we get valid RESP, for non-return REQ nvim just returns nil
+                // need inn_dispatch to different response handler
+
+                if(m_onresp.find(msgid) == m_onresp.end()){
+                    if(m_onresperr.find(msgid) != m_onresperr.end()){
+                        throw std::runtime_error(str_fflprintf(": Found error handler but no resp handler: %zu", req_id));
+                    }
+                    m_onresperr.erase(msgid);
+                    return 0;
+                }
+
+                inn_dispatch(req_id, msgid, mpack_node_array_at(rootopt.value(), 3), m_onresp);
+                return msgid;
+            }
+        case libnvc::NOTIF:
+            {
+                return 0;
+            }
+        default:
+            {
+                throw std::runtime_error(str_fflprintf("mpack from nvim server has message type: %d, expect [REQ, RESP, NOTIF]: %d", (int)(msg_type)));
+            }
     }
 }

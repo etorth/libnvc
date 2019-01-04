@@ -17,8 +17,8 @@
  */
 
 #include "asio.hpp"
+#include "libnvc.hpp"
 #include "strfunc.hpp"
-#include "asiosocket.hpp"
 
 namespace libnvc
 {

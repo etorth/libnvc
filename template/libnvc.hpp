@@ -250,7 +250,7 @@ namespace libnvc
             virtual size_t recv(      char *, size_t) = 0;
 
         public:
-            size_t send(std::string s)
+            size_t send(std::string_view s)
             {
                 return send(s.data(), s.length());
             }
@@ -386,11 +386,6 @@ namespace libnvc::mpinterf
                 }
             }
 
-            template<typename... Args> void write(const std::tuple<Args...> args)
-            {
-                std::apply(&(libnvc::mpinterf::writer::write), args);
-            }
-
         private:
             void write();
             void write(double);
@@ -409,8 +404,8 @@ namespace libnvc::mpinterf
             template<typename... Args> std::string_view pack_req(int64_t msgid, Args... args)
             {
                 auto [req_id, seq_id] = libnvc::msgid_decomp(msgid);
-		if(seq_id <= 0){
-		}
+                if(seq_id <= 0){
+                }
 
                 clear();
                 start_array(4);
@@ -418,7 +413,7 @@ namespace libnvc::mpinterf
                     write(libnvc::REQ);
                     write(msgid);
                     write(libnvc::reqstr(req_id));
-                    start_array(1);
+                    start_array(sizeof...(args));
                     {
                         write(args...);
                     }
@@ -517,10 +512,10 @@ namespace libnvc
 
                     m_onresp[msg_id] = [this, on_resp](libnvc::resp_variant result)
                     {
-                        if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
+                        if constexpr (std::is_void_v<typename libnvc::req<reqid>::resp_type>){
                             on_resp();
                         }else{
-                            on_resp(std::get<typename libnvc::req<reqid>::res_t>(result));
+                            on_resp(std::get<typename libnvc::req<reqid>::resp_type>(result));
                         }
                     };
                 }
@@ -538,29 +533,62 @@ namespace libnvc
             }
 
         public:
-            template<size_t reqid, typename on_resp_t> inline void forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp)
+            template<size_t reqid, typename on_resp_t> inline int64_t forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp)
             {
                 add_seqid(1);
-                m_socket->send(parms.pack(msgid(reqid, seqid())));
+                auto msgid = libnvc::msgid(reqid, seqid());
+
+                libnvc::mpinterf::writer packer;
+                auto fn_pack = [&packer](int64_t msgid, auto &&... args)
+                {
+                    return packer.pack_req(msgid, std::forward<decltype(args)>(args)...);
+                };
+
+                m_socket->send(std::apply(fn_pack, std::tuple_cat(std::make_tuple(msgid), parms)));
                 regcb_resp<reqid, on_resp_t>(on_resp);
+                return msgid;
             }
 
-            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline void forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp, on_resperr_t on_resperr)
+            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline int64_t forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp, on_resperr_t on_resperr)
             {
                 add_seqid(1);
-                m_socket->send(parms.pack(msgid(reqid, seqid())));
+                auto msgid = libnvc::msgid(reqid, seqid());
 
+                libnvc::mpinterf::writer packer;
+                auto fn_pack = [&packer](int64_t msgid, auto &&... args)
+                {
+                    return packer.pack_req(msgid, std::forward<decltype(args)>(args)...);
+                };
+
+                m_socket->send(std::apply(fn_pack, std::tuple_cat(std::make_tuple(msgid), parms)));
                 regcb_resp<reqid, on_resp_t>(on_resp);
                 regcb_resperr<reqid, on_resperr_t>(on_resperr);
+                return msgid;
             }
 
         public:
-            void poll();
+            void poll()
+            {
+                while(poll_one()) continue;
+            }
+
+        public:
+            int64_t poll_one();
+
+        public:
+            void poll_wait(int64_t msgid)
+            {
+                while(true){
+                    if(msgid == poll_one()){
+                        break;
+                    }
+                }
+            }
 
         public:
             //#### ninja2 begins
 {% for req in nvim_reqs %}
-            {{req.return_type}} {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name, }}{% endfor %})
+            {{req.return_type}} {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %})
             {
 {% if req.return_type != 'void' %}
                 {{req.return_type}} r;
@@ -575,9 +603,7 @@ namespace libnvc
 {% endif %}
                 auto on_resperr = [](int64_t ec, std::string emsg)
                 {
-                    std::stringstream ss;
-                    ss << "Get error for request {{req.name}}: [" << ec << ", " << emsg << "]";
-                    std::throw std::runtime_error(ss.str());
+                    throw std::runtime_error(((std::string("Error for request\"{{req.name}}\": [") + std::to_string(ec) + ", ") + emsg) + "]");
                 };
 
                 constexpr size_t req_id = libnvc::reqid("{{req.name}}");

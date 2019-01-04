@@ -16,7 +16,6 @@
  * =====================================================================================
  */
 
-#pragma once
 #include <new>
 #include <map>
 #include <array>
@@ -25,9 +24,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include "mpack.h"
-#include "ctf.hpp"
-#include "valdef.hpp"
-#include "objdef.hpp"
+#include "libnvc.hpp"
 #include "strfunc.hpp"
 
 libnvc::mpinterf::writer::writer()
@@ -38,8 +35,8 @@ libnvc::mpinterf::writer::writer()
     // m_writer_t from mpack package is pure c struct
     // so it's a pod type, should be safe ...
 
-    static_assert( sizeof(m_storage) >= sizeof(mpack_writer_t)     , "aligned memory for mpack_writer_t too small, define bigger LIBNVC_MPACK_WRITER_SIZE");
-    static_assert(alignof(m_storage) % alignof(mpack_writer_t) == 0, "aligned memory misaligned to mpack_writer_t, define bigger LIBNVC_MPACK_WRITER_ALIGN");
+    static_assert( sizeof(decltype(m_storage)) >= sizeof(mpack_writer_t)     , "aligned memory for mpack_writer_t too small, define bigger LIBNVC_MPACK_WRITER_SIZE");
+    static_assert(alignof(decltype(m_storage)) % alignof(mpack_writer_t) == 0, "aligned memory misaligned to mpack_writer_t, define bigger LIBNVC_MPACK_WRITER_ALIGN");
 
     new (storage()) mpack_writer_t();
     mpack_writer_init_growable((mpack_writer_t *)(storage()), &m_data, &m_size);
@@ -52,7 +49,7 @@ libnvc::mpinterf::writer::~writer()
     reinterpret_cast<mpack_writer_t *>(storage())->~mpack_writer_t();
 }
 
-void libnvc::mpinterf::flush()
+void libnvc::mpinterf::writer::flush()
 {
     if(m_writer_alive){
         if(mpack_writer_destroy(reinterpret_cast<mpack_writer_t *>(storage())) != mpack_ok){
@@ -62,7 +59,7 @@ void libnvc::mpinterf::flush()
     }
 }
 
-std::string_view libnvc::mpinterf::writer::pack() const
+std::string_view libnvc::mpinterf::writer::pack()
 {
     this->flush();
     if(m_data == nullptr){
@@ -82,23 +79,23 @@ void libnvc::mpinterf::writer::clear()
     m_size = 0;
 }
 
-void libnvc::mpinterf::write()
+void libnvc::mpinterf::writer::write()
 {
     mpack_write_nil(reinterpret_cast<mpack_writer_t *>(storage());
 }
 
-void libnvc::mpinterf::write(const std::array<int64_t, 2> &vec)
+void libnvc::mpinterf::writer::write(const std::array<int64_t, 2> &vec)
 {
     write(vec[0]);
     write(vec[1]);
 }
 
-void libnvc::mpinterf::write(int64_t val)
+void libnvc::mpinterf::writer::write(int64_t val)
 {
     mpack_write_i64(reinterpret_cast<mpack_writer_t *>(storage()), val);
 }
 
-void libnvc::mpinterf::write(double val)
+void libnvc::mpinterf::writer::write(double val)
 {
     mpack_write_double(reinterpret_cast<mpack_writer_t *>(storage()), val);
 }
