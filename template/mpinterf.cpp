@@ -65,7 +65,7 @@ std::string_view libnvc::mpinterf::writer::pack()
     if(m_data == nullptr){
         throw std::runtime_error(str_fflprintf(": try to pack an empty writer"));
     }
-    return {m_data, m_data + m_size};
+    return {m_data, m_size};
 }
 
 void libnvc::mpinterf::writer::clear()
@@ -81,7 +81,7 @@ void libnvc::mpinterf::writer::clear()
 
 void libnvc::mpinterf::writer::write()
 {
-    mpack_write_nil(reinterpret_cast<mpack_writer_t *>(storage());
+    mpack_write_nil(reinterpret_cast<mpack_writer_t *>(storage()));
 }
 
 void libnvc::mpinterf::writer::write(const std::array<int64_t, 2> &vec)
