@@ -16,7 +16,7 @@ int main()
     }
 
     libnvc::api_client client(&socket);
-    client.nvim_input({"$i123<CR>123<ESC>"});
+    client.nvim_input("$i123<CR>123<ESC>");
     client.nvim_buf_set_name(1, "1234");
 ```
 
