@@ -154,7 +154,7 @@ class nvimNativeType:
             return typeOut('std::vector<%s>' % cls.nativeType(m.groups()[0], out = True), out)
 
         if typename == cls.PAIRTYPE:
-            return typeOut('std::array<int64_t>', True)
+            return typeOut('std::array<int64_t, 2>', True)
 
         raise UnsupportedType(typename)
 
@@ -176,9 +176,10 @@ class nvimReq:
     """
 
     def __init__(self, nvim_fun):
-        self.func = nvim_fun
-        self.args = []
-        self.name = self.func['name']
+        self.func  = nvim_fun
+        self.name  = self.func['name']
+        self.since = self.func['since']
+        self.args  = []
         try:
             self.return_type = nvimNativeType.nativeType(self.func['return_type'], out = True)
             for param in self.func['parameters']:

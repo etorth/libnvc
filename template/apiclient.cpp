@@ -21,8 +21,6 @@
 #include "mpack.h"
 #include "libnvc.hpp"
 #include "strfunc.hpp"
-#include "mpinterf.hpp"
-#include "apiclient.hpp"
 
 namespace libnvc
 {
@@ -222,20 +220,32 @@ static int64_t server_pack_type(mpack_node_t root)
     return (int64_t)(mpack_node_uint(mpack_node_array_at(root, 0)));
 }
 
-static void dispatch(size_t req_id, int64_t msg_id, mpack_node_t node, std::map<int64_t, libnvc::object> &on_resp)
+template<size_t reqid> libnvc::resp_variant inn_make_resp_variant(mpack_node_t node)
 {
-    switch(req_id){
+    if constexpr (std::is_void_v<typename libnvc::req<reqid>::resp_type>){
+        return libnvc::resp_variant(libnvc::void_type());
+    }else{
+        return libnvc::resp_variant(mp_read<typename libnvc::req<reqid>::resp_type>(node));
+    }
+}
+
+static void inn_dispatch(size_t reqid, int64_t msgid, mpack_node_t node, std::map<int64_t, libnvc::object> &resp_pool)
+{
+    // there is no argument checking
+    // only call this function in api_client::poll
+
+    switch(reqid){
 {% for req in nvim_reqs %}
         case libnvc::reqid("{{req.name}}"):
             {
-                on_resp[msg_id](libnvc::make_object<libnvc::reqid("{{req.name}}")>(node));
-{% endfor %}
-                on_resp.erase(msg_id);
+                resp_pool[msgid](inn_make_resp_variant<libnvc::reqid("{{req.name}}")>(node));
+                resp_pool.erase(msgid);
                 break;
             }
+{% endfor %}
         default:
             {
-                throw invalid_argument(str_fflprintf(": Invalid req_id: %zu", req_id));
+                throw invalid_argument(str_fflprintf(": Invalid reqid: %zu", reqid));
             }
     }
 }
@@ -288,7 +298,7 @@ void libnvc::api_client::poll()
                             throw std::runtime_error(str_fflprintf("RESP error array [type, message] has invalid size: %zu", errnode_size));
                         }
 
-                        int64_t ec = mpack_node_i64(mpack_node_array_at(errnode, 0));
+                        int64_t          ec = mpack_node_i64(mpack_node_array_at(errnode, 0));
                         const char *msg_ptr = mpack_node_str(mpack_node_array_at(errnode, 1));
                         size_t      msg_len = mpack_node_strlen(mpack_node_array_at(errnode, 1));
 
@@ -301,13 +311,13 @@ void libnvc::api_client::poll()
                     }
 
                     // we get valid RESP, for non-return REQ nvim just returns nil
-                    // need dispatch to different response handler
+                    // need inn_dispatch to different response handler
 
                     if(m_onresp.find(msgid) == m_onresp.end()){
                         return;
                     }
 
-                    dispatch(req_id, msgid, mpack_node_array_at(rootopt.value(), 3), m_onresp);
+                    inn_dispatch(req_id, msgid, mpack_node_array_at(rootopt.value(), 3), m_onresp);
                     break;
                 }
             case libnvc::NOTIF:

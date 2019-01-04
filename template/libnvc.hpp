@@ -18,17 +18,13 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include <variant>
+#include <cstdint>
+#include <cstddef>
+#include <functional>
 #include <type_traits>
-#include "log.hpp"
-#include "valdef.hpp"
-#include "objdef.hpp"
-#include "typedef.hpp"
-
-#include "socket.hpp"
-#include "asiosocket.hpp"
-
-#include "apiclient.hpp"
-#include "guiclient.hpp"
 
 namespace libnvc
 {
@@ -196,10 +192,6 @@ namespace libnvc
 
     constexpr size_t min_reqid()
     {
-        if(str == nullptr){
-            return 0;
-        }
-
         for(size_t id = 1; libnvc::idstr(id) != nullptr; ++id){
             if(libnvc::ctf::strncmp(libnvc::idstr(id), "req::", 5) == 0){
                 return id;
@@ -208,12 +200,8 @@ namespace libnvc
         return 0;
     }
 
-    constexpr size_t max_reqid(const char *str)
+    constexpr size_t max_reqid()
     {
-        if(str == nullptr){
-            return 0;
-        }
-
         for(size_t id = std::extent<decltype(g_nvim_reserved_api_string_tbl)>::value - 1; libnvc::idstr(id) != nullptr; --id){
             if(libnvc::ctf::strncmp(libnvc::idstr(id), "req::", 5) == 0){
                 return id;
@@ -224,48 +212,23 @@ namespace libnvc
 
     constexpr size_t min_notifid()
     {
-        if(str == nullptr){
-            return 0;
-        }
-
         for(size_t id = 1; libnvc::idstr(id) != nullptr; ++id){
-            if(libnvc::ctf::strncmp(libnvc::idstr(id), "notif::", 5) == 0){
+            if(libnvc::ctf::strncmp(libnvc::idstr(id), "notif::", 7) == 0){
                 return id;
             }
         }
         return 0;
     }
 
-    constexpr size_t max_notifid(const char *str)
+    constexpr size_t max_notifid()
     {
-        if(str == nullptr){
-            return 0;
-        }
-
         for(size_t id = std::extent<decltype(g_nvim_reserved_api_string_tbl)>::value - 1; libnvc::idstr(id) != nullptr; --id){
-            if(libnvc::ctf::strncmp(libnvc::idstr(id), "notif::", 5) == 0){
+            if(libnvc::ctf::strncmp(libnvc::idstr(id), "notif::", 7) == 0){
                 return id;
             }
         }
         return 0;
     }
-}
-
-namespace libnvc
-{
-    struct nil_type
-    {
-        int unused = 0;
-    };
-
-    using nil_t = struct nil_type;
-    using object = std::variant<libnvc::nil_t,
-{% for result_type in nvim_reqs|map(attribute='return_type')|unique %}
-    {% if result_type != 'void' %}
-        {{result_type}}{% if not loop.last %},{% endif %} 
-    {% endif %}
-{% endfor %}
-    >;
 }
 
 namespace libnvc
@@ -324,28 +287,62 @@ namespace libnvc
     constexpr int64_t NOTIF = 2;
 }
 
+namespace libnvc
+{
+    struct _void_type
+    {
+        int unused = 0;
+    };
+
+    using void_type = struct _void_type;
+    using object = std::variant<int64_t, std::string>;
+
+    using resp_variant = std::variant<libnvc::void_type,
+{% for result_type in nvim_reqs|map(attribute='return_type')|unique %}
+    {% if result_type != 'void' %}
+        {{result_type}}{% if not loop.last %},{% endif %} 
+    {% endif %}
+{% endfor %}
+    >;
+}
+
+namespace libnvc
+{
+    inline int64_t msgid(size_t req_id, int64_t seq_id)
+    {
+	// put seq_id at high bits
+	// this helps to make the key/value pairs sorted by sent time
+	return ((seq_id & 0x0000ffffffffffff) << 16) | ((int64_t)(req_id) & 0x000000000000ffff);
+    }
+
+    inline std::tuple<size_t, int64_t> msgid_decomp(int64_t msg_id)
+    {
+	return {(size_t)(msg_id & 0x000000000000ffff), msg_id >> 16};
+    }
+}
+
 namespace libnvc::mpinterf
 {
     class writer
     {
         private:
-            constexpr size_t m_writer_size = []()
+            constexpr static size_t m_writer_size = []()
             {
 #ifdef LIBNVC_MPACK_WRITER_SIZE
                 return LIBNVC_MPACK_WRITER_SIZE;
 #else
                 return 128;
 #endif
-            };
+            }();
 
-            constexpr size_t m_writer_align = []()
+            constexpr static size_t m_writer_align = []()
             {
 #ifdef LIBNVC_MPACK_WRITER_ALIGN
                 return LIBNVC_MPACK_WRITER_ALIGN;
 #else
                 return 16;
 #endif
-            };
+            }();
 
         private:
             std::aligned_storage_t<m_writer_size, m_writer_align> m_storage;
@@ -404,10 +401,16 @@ namespace libnvc::mpinterf
             void write(const std::array<int64_t, 2> &);
             void write(const std::map<std::string, libnvc::object>&);
 
+        private:
+            void start_array(size_t);
+            void finish_array();
+
         public:
-            template<typename Args... args> std::string_view pack_req(int64_t msgid, Args... args)
+            template<typename... Args> std::string_view pack_req(int64_t msgid, Args... args)
             {
-                auto [req_id, seq_id] = msgid_decomp(msgid);
+                auto [req_id, seq_id] = libnvc::msgid_decomp(msgid);
+		if(seq_id <= 0){
+		}
 
                 clear();
                 start_array(4);
@@ -422,7 +425,7 @@ namespace libnvc::mpinterf
                     finish_array();
 
                 }
-                finish_array(4);
+                finish_array();
                 return pack();
             }
     };
@@ -441,7 +444,7 @@ namespace libnvc
 {% endfor %}
         >;
 
-        using result_type = {{req.return_type}};
+        using resp_type = {{req.return_type}};
 
         constexpr int since() const
         {
@@ -455,22 +458,10 @@ namespace libnvc
 
         constexpr const char *name() const
         {
-            return "{{req.name}}";
+            return reqstr(id());
         }
     };
 {% endfor %}
-}
-
-namespace libnvc
-{
-    template<size_t reqid> inline libnvc::object make_object(mpack_node_t node)
-    {
-        if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
-            return libnvc::object(libnvc::nil_t());
-        }else{
-            return libnvc::object(libnvc::mp_read<typename libnvc::req<reqid>::res_t>(node));
-        }
-    }
 }
 
 namespace libnvc
@@ -490,7 +481,7 @@ namespace libnvc
             libnvc::socket *m_socket;
 
         private:
-            std::map<int64_t, std::function<void(libnvc::object)>>       m_onresp;
+            std::map<int64_t, std::function<void(libnvc::resp_variant)>> m_onresp;
             std::map<int64_t, std::function<void(int64_t, std::string)>> m_onresperr;
 
         public:
@@ -514,28 +505,17 @@ namespace libnvc
             }
 
         private:
-            static int64_t msgid(size_t req_id, int64_t seq_id)
-            {
-                // put seq_id at high bits
-                // this helps to make the key/value pairs sorted by sent time
-                return ((seq_id & 0x0000ffffffffffff) << 16) | ((int64_t)(req_id) & 0x000000000000ffff);
-            }
-
-            static std::tuple<size_t, int64_t> msgid_decomp(int64_t msg_id)
-            {
-                return {(size_t)(msg_id & 0x000000000000ffff), msg_id >> 16};
-            }
 
         private:
             template<size_t reqid, typename on_resp_t> inline void regcb_resp(on_resp_t on_resp)
             {
-                auto msg_id = msgid(reqid, seqid());
+                auto msg_id = libnvc::msgid(reqid, seqid());
                 if(true /* on_resp */){
                     if(m_onresp.find(msg_id) != m_onresp.end()){
                         throw std::runtime_error(((std::string("response handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seqid()));
                     }
 
-                    m_onresp[msg_id] = [this, on_resp](libnvc::object result)
+                    m_onresp[msg_id] = [this, on_resp](libnvc::resp_variant result)
                     {
                         if constexpr (std::is_void_v<typename libnvc::req<reqid>::res_t>){
                             on_resp();
@@ -548,7 +528,7 @@ namespace libnvc
 
             template<size_t reqid, typename on_resperr_t> inline void regcb_resperr(on_resperr_t on_resperr)
             {
-                auto msg_id = msgid(reqid, seqid());
+                auto msg_id = libnvc::msgid(reqid, seqid());
                 if(true /* on_resperr */){
                     if(m_onresperr.find(msg_id) != m_onresperr.end()){
                         throw std::runtime_error(((std::string("response error handler already resgistered: req = ") + libnvc::idstr(reqid)) + ", seqid = ") + std::to_string(seqid()));
@@ -558,14 +538,14 @@ namespace libnvc
             }
 
         public:
-            template<size_t reqid, typename on_resp_t> inline void forward(typename libnvc::req<reqid>::parms_t parms, on_resp_t on_resp)
+            template<size_t reqid, typename on_resp_t> inline void forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp)
             {
                 add_seqid(1);
                 m_socket->send(parms.pack(msgid(reqid, seqid())));
                 regcb_resp<reqid, on_resp_t>(on_resp);
             }
 
-            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline void forward(typename libnvc::req<reqid>::parms_t parms, on_resp_t on_resp, on_resperr_t on_resperr)
+            template<size_t reqid, typename on_resp_t, typename on_resperr_t> inline void forward(typename libnvc::req<reqid>::parms_tuple parms, on_resp_t on_resp, on_resperr_t on_resperr)
             {
                 add_seqid(1);
                 m_socket->send(parms.pack(msgid(reqid, seqid())));
@@ -578,18 +558,40 @@ namespace libnvc
             void poll();
 
         public:
+            //#### ninja2 begins
 {% for req in nvim_reqs %}
-            template<typename on_resp_t> void {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}, on_resp_t on_resp)
+            {{req.return_type}} {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name, }}{% endfor %})
             {
-                forward<libnvc::reqid("{{req.name}}")>(libnvc::req<libnvc::reqid("{{req.name}}")>::parms_t({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp);
-            }
+{% if req.return_type != 'void' %}
+                {{req.return_type}} r;
+                auto on_resp = [&r]({{req.return_type}} res)
+                {
+                    r = res;
+                };
+{% else %}
+                auto on_resp = []()
+                {
+                };
+{% endif %}
+                auto on_resperr = [](int64_t ec, std::string emsg)
+                {
+                    std::stringstream ss;
+                    ss << "Get error for request {{req.name}}: [" << ec << ", " << emsg << "]";
+                    std::throw std::runtime_error(ss.str());
+                };
 
-            template<typename on_resp_t, typename on_resperr_t> void {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}, on_resp_t on_resp, on_resperr_t on_resperr)
-            {
-                forward<libnvc::reqid("{{req.name}}")>(libnvc::req<libnvc::reqid("{{req.name}}")>::parms_t({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp, on_resperr);
+                constexpr size_t req_id = libnvc::reqid("{{req.name}}");
+                auto msgid = forward<req_id>(libnvc::req<req_id>::parms_tuple({% for arg in req.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %}), on_resp, on_resperr);
+                poll_wait(msgid);
+{% if req.return_type != 'void' %}
+                return r;
+{% else %}
+                return;
+{% endif %}
             }
 
 {% endfor %}
+            //#### ninja2 ends
     };
 }
 
