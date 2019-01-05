@@ -45,6 +45,11 @@ int main()
         std::printf("nvim reports error: [%d, %s]", (int)(ec), emsg.c_str());
     });
 
+    client.forward<libnvc::reqid("nvim_command")>({":echomsg \"hello world\""}, []()
+    {
+        libnvc::log(libnvc::LOG_INFO, "nvim_command done");
+    });
+
     while(true){
         client.poll();
     }
