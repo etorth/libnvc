@@ -31,22 +31,22 @@ namespace libnvc
             mpack_tree_t m_tree;
 
         public:
-            stream_decoder(libnvc::socket *psocket)
+            stream_decoder(libnvc::io_device *piodev)
                 : m_tree()
             {
-                if(!psocket){
-                    throw std::invalid_argument(str_fflprintf(": Invalid socket: (nullptr)"));
+                if(!piodev){
+                    throw std::invalid_argument(str_fflprintf(": Invalid io device: (nullptr)"));
                 }
                 // checked the code
                 // seems this function always succeeds
-                mpack_tree_init_stream(&m_tree, &read_socket, psocket, 1024 * 1024, 1024);
+                mpack_tree_init_stream(&m_tree, &read_iodev, piodev, 1024 * 1024, 1024);
             }
 
         public:
             ~stream_decoder()
             {
-                // don't free the socket
-                // decoder doesn't own the lifecycle of socket
+                // don't free the device
+                // decoder doesn't own the lifecycle of io device
                 mpack_tree_destroy(&m_tree);
             }
 
@@ -74,10 +74,10 @@ namespace libnvc
             }
 
         private:
-            static size_t read_socket(mpack_tree_t *ptree, char *buf, size_t count)
+            static size_t read_iodev(mpack_tree_t *ptree, char *buf, size_t count)
             {
-                if(auto psocket = (libnvc::socket *)(mpack_tree_context(ptree))){
-                    return psocket->recv(buf, count);
+                if(auto piodev = (libnvc::io_device *)(mpack_tree_context(ptree))){
+                    return piodev->recv(buf, count);
                 }
                 throw std::runtime_error(str_fflprintf(": Empty context in mpack_tree_t: %p", ptree));
             }
@@ -225,10 +225,10 @@ namespace
     }
 }
 
-libnvc::api_client::api_client(libnvc::socket *psocket)
-    : m_decoder(std::make_unique<stream_decoder>(psocket))
+libnvc::api_client::api_client(libnvc::io_device *piodev)
+    : m_decoder(std::make_unique<stream_decoder>(piodev))
     , m_seqid(1)
-    , m_socket(psocket)
+    , m_iodev(piodev)
     , m_onresp()
     , m_onresperr()
 {

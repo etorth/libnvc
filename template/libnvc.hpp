@@ -231,17 +231,13 @@ namespace libnvc
 
 namespace libnvc
 {
-    class socket
+    class io_device
     {
         public:
-            socket() = default;
+            io_device() = default;
 
         public:
-            virtual ~socket() = default;
-
-        public:
-            virtual bool connect(const char *, int) = 0;
-            virtual void disconnect()               = 0;
+            virtual ~io_device() = default;
 
         public:
             virtual size_t send(const char *, size_t) = 0; // blocking send, return after done all bytes
@@ -252,6 +248,22 @@ namespace libnvc
             {
                 return send(s.data(), s.length());
             }
+    };
+}
+
+namespace libnvc
+{
+    class socket: public libnvc::io_device
+    {
+        public:
+            socket() = default;
+
+        public:
+            virtual ~socket() = default;
+
+        public:
+            virtual bool connect(const char *, int) = 0;
+            virtual void disconnect()               = 0;
     };
 
     class asio_socket: public libnvc::socket
@@ -472,14 +484,14 @@ namespace libnvc
             int64_t m_seqid;
 
         private:
-            libnvc::socket *m_socket;
+            libnvc::io_device *m_iodev;
 
         private:
             std::map<int64_t, std::function<void(libnvc::resp_variant)>> m_onresp;
             std::map<int64_t, std::function<void(int64_t, std::string)>> m_onresperr;
 
         public:
-            api_client(libnvc::socket *);
+            api_client(libnvc::io_device *);
 
         public:
             // seems I can't use the default dtor
@@ -549,7 +561,7 @@ namespace libnvc
                     return packer.pack_req(msgid, std::forward<decltype(args)>(args)...);
                 };
 
-                m_socket->send(std::apply(fn_pack, std::tuple_cat(std::make_tuple(msgid), parms)));
+                m_iodev->send(std::apply(fn_pack, std::tuple_cat(std::make_tuple(msgid), parms)));
                 regcb_resp<reqid, on_resp_t>(on_resp);
                 return msgid;
             }
@@ -565,7 +577,7 @@ namespace libnvc
                     return packer.pack_req(msgid, std::forward<decltype(args)>(args)...);
                 };
 
-                m_socket->send(std::apply(fn_pack, std::tuple_cat(std::make_tuple(msgid), parms)));
+                m_iodev->send(std::apply(fn_pack, std::tuple_cat(std::make_tuple(msgid), parms)));
                 regcb_resp<reqid, on_resp_t>(on_resp);
                 regcb_resperr<reqid, on_resperr_t>(on_resperr);
                 return msgid;
