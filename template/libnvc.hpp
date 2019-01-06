@@ -603,6 +603,10 @@ namespace libnvc
             }
 
         public:
+            // blocking API
+            // this may be necessary for requests like nvim_ui_attach()
+            // when got error reported from nvim server these function throw [errc, errmsg]
+
 {% for req in nvim_reqs %}
             {{req.return_type}} {{req.name}}({% for arg in req.args %}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %})
             {

@@ -28,10 +28,9 @@ int main()
     nvim_process nvim_proc;
     libnvc::api_client client(&nvim_proc);
 
-    client.forward<libnvc::reqid("nvim_ui_attach")>({100, 100, {}}, []()
-    {
-        libnvc::log(libnvc::LOG_INFO, "nvim_ui_attach() succeeds");
-    });
+    // attach the ui
+    // this function responds slow
+    client.nvim_ui_attach(100, 100, {});
 
     client.forward<libnvc::reqid("nvim_input")>({"$i123<CR>123<ESC>"}, [](int64_t len_done)
     {
@@ -56,4 +55,5 @@ int main()
     while(true){
         client.poll();
     }
+    return 0;
 }
