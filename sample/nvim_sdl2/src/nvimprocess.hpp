@@ -34,7 +34,7 @@ class nvim_process: public libnvc::io_device
             , m_output()
         {
             if(auto ec = m_reproc.start({"nvim", "--embed"}); ec){
-                throw std::runtime_error("Error when starting nvim: " + ec.message());
+                throw std::runtime_error(std::string("Error when starting nvim: ") + ec.message());
             }
         }
 
@@ -49,18 +49,10 @@ class nvim_process: public libnvc::io_device
     public:
         size_t recv(char *buf, size_t length)
         {
-            if(m_output.empty()){
-                m_reproc.drain(reproc::stream::out, reproc::string_sink(m_output));
+            unsigned int done_length = 0;
+            if(auto ec = m_reproc.read(reproc::stream::out, buf, length, &done_length); ec){
+                throw std::runtime_error(std::string("Failed to recv data: ") + ec.message());
             }
-
-            if(m_output.empty()){
-                return 0;
-            }
-
-            size_t out_length = std::min<size_t>(length, m_output.length());
-            std::copy(m_output.begin(), m_output.begin() + out_length, buf);
-
-            m_output.erase(0, out_length);
-            return out_length;
+            return done_length;
         }
 };
