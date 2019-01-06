@@ -33,7 +33,7 @@ class nvim_process: public libnvc::io_device
             : m_reproc(reproc::wait, reproc::infinite)
             , m_output()
         {
-            if(auto ec = m_reproc.start({"nvim", "--embed"}); ec){
+            if(auto ec = m_reproc.start({"nvim", "-u", "NONE", "--embed"}); ec){
                 throw std::runtime_error(std::string("Error when starting nvim: ") + ec.message());
             }
         }
