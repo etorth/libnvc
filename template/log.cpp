@@ -67,7 +67,7 @@ void libnvc::log(int log_type, const char *log_str)
             }
         default:
             {
-                g_log_func(libnvc::LOG_WARNING, str_fflprintf("unknown log type (%d) with message: %s", log_type, log_str).c_str());
+                g_log_func(libnvc::LOG_WARNING, str_fflprintf(": Unknown log type (%d) with message: %s", log_type, log_str).c_str());
                 return;
             }
     }

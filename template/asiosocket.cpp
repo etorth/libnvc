@@ -62,7 +62,7 @@ namespace libnvc
                 if(auto size_done = asio::write(m_socket, asio::buffer(buf, size), ec); !ec){
                     return size_done;
                 }
-                throw std::runtime_error(str_printf("asio::write(%p, %zu) failed: %s", buf, size, ec.message().c_str()));
+                throw std::runtime_error(str_fflprintf(": Failed in asio::write(%p, %zu): %s", buf, size, ec.message().c_str()));
             }
 
             size_t recv(char *buf, size_t size)
@@ -95,7 +95,7 @@ namespace libnvc
 
                     m_socket.io_control(ctrl, ec_ctrl);
                     if(ec_ctrl){
-                        throw std::runtime_error(str_printf("socket::io_control(byte_readable) failed: %s", ec_ctrl.message().c_str()));
+                        throw std::runtime_error(str_fflprintf(": Failed in socket::io_control(byte_readable : %s", ec_ctrl.message().c_str()));
                     }
 
                     size_t has_data = ctrl.get();
@@ -113,7 +113,7 @@ namespace libnvc
                 }, ec); !ec){
                     return size_recv;
                 }
-                throw std::runtime_error(str_printf("asio::read(%p, %zu) failed: %s", buf, size, ec.message().c_str()));
+                throw std::runtime_error(str_fflprintf(": Failed in asio::read(%p, %zu): %s", buf, size, ec.message().c_str()));
             }
     };
 }

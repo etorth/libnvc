@@ -258,7 +258,7 @@ static void log_server_pack_node(mpack_node_t node)
         }
         log_str.replace(index, 1, "\\n");
     }
-    libnvc::log(libnvc::LOG_INFO, str_fflprintf("%s", log_str.c_str()).c_str());
+    libnvc::log(libnvc::LOG_INFO, str_fflprintf(": %s", log_str.c_str()).c_str());
 }
 
 static int64_t server_pack_type(mpack_node_t root)
@@ -323,7 +323,7 @@ int64_t libnvc::api_client::poll_one()
     }
 
     if(auto first_node_type = mpack_node_type(mpack_node_array_at(rootopt.value(), 0)); first_node_type != mpack_type_uint){
-        throw std::runtime_error(str_fflprintf("mpack from nvim server has first node type %s, expect mpack_type_uint", mpack_type_to_string(first_node_type)));
+        throw std::runtime_error(str_fflprintf(": The msgpack from nvim server has first node type %s, expect mpack_type_uint", mpack_type_to_string(first_node_type)));
     }
 
     switch(auto msg_type = server_pack_type(rootopt.value())){
@@ -334,24 +334,24 @@ int64_t libnvc::api_client::poll_one()
         case libnvc::RESP:
             {
                 if(size_t array_size = mpack_node_array_length(rootopt.value()); array_size != 4){
-                    throw std::runtime_error(str_fflprintf("RESP array size is not 4: %zu", array_size));
+                    throw std::runtime_error(str_fflprintf(": RESP array size is not 4: %zu", array_size));
                 }
 
                 int64_t msgid = mpack_node_i64(mpack_node_array_at(rootopt.value(), 1));
                 auto [req_id, seq_id] = msgid_decomp(msgid);
-                libnvc::log(libnvc::LOG_INFO, str_fflprintf("req_id = %s, seq_id = %" PRIi64, libnvc::idstr(req_id), seq_id).c_str());
+                libnvc::log(libnvc::LOG_INFO, str_fflprintf(": req_id = %s, seq_id = %" PRIi64, libnvc::idstr(req_id), seq_id).c_str());
 
                 if(libnvc::idstr(req_id) == nullptr){
-                    throw std::runtime_error(str_fflprintf("RESP to invalid REQ: %" PRIi64, req_id));
+                    throw std::runtime_error(str_fflprintf(": RESP to invalid REQ: %" PRIi64, req_id));
                 }
 
                 if(seq_id <= 0){
-                    throw std::runtime_error(str_fflprintf("RESP with invalid seq_id: %" PRIi64, seq_id));
+                    throw std::runtime_error(str_fflprintf(": RESP with invalid seq_id: %" PRIi64, seq_id));
                 }
 
                 if(auto errnode = mpack_node_array_at(rootopt.value(), 2); !mpack_node_is_nil(errnode)){
                     if(size_t errnode_size = mpack_node_array_length(errnode); errnode_size != 2){
-                        throw std::runtime_error(str_fflprintf("RESP error array [type, message] has invalid size: %zu", errnode_size));
+                        throw std::runtime_error(str_fflprintf(": RESP error array [type, message] has invalid size: %zu", errnode_size));
                     }
 
                     int64_t          ec = mpack_node_i64(mpack_node_array_at(errnode, 0));
@@ -386,7 +386,7 @@ int64_t libnvc::api_client::poll_one()
             }
         default:
             {
-                throw std::runtime_error(str_fflprintf("mpack from nvim server has message type: %d, expect [REQ, RESP, NOTIF]: %d", (int)(msg_type)));
+                throw std::runtime_error(str_fflprintf(": The msgpack from nvim server has message type: %d, expect [REQ, RESP, NOTIF]: %d", (int)(msg_type)));
             }
     }
 }
