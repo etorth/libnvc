@@ -593,6 +593,14 @@ namespace libnvc
             int64_t poll_one();
 
         public:
+            void poll_all()
+            {
+                while(!m_onresp.empty() || !m_onresperr.empty()){
+                    poll();
+                }
+            }
+
+        public:
             void poll_wait(int64_t msgid)
             {
                 while(true){
