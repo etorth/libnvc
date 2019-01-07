@@ -308,7 +308,7 @@ static void inn_dispatch_req(size_t reqid, int64_t msgid, mpack_node_t node, std
     }
 }
 
-static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
+static void inn_dispatch_notif(const char *notif_name, mpack_node_t event_node, libnvc::api_client *pclient)
 {
     // not argument check
     // we can use mpack_node_enum() to make switch-case branches
@@ -316,7 +316,9 @@ static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
     // assume the node is a string
     // need check in caller
 
-    const char *notif_name = mpack_node_str(node);
+    if(notif_name == nullptr){
+        throw std::invalid_argument(str_fflprintf(": Invalid notif_name: (nullptr)"));
+    }
 
     if(false){
 {% for notif in nvim_notifs %}
@@ -326,14 +328,14 @@ static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
         return;
 {% else %}
         const size_t notif_parms_count = {{notif.args|length}};
-        const size_t array_length = mpack_node_array_length(node);
+        const size_t array_length = mpack_node_array_length(event_node);
 
         if(notif_parms_count != array_length){
             throw std::runtime_error(str_fflprintf(": Incorrect parameter count: %zu, expecting %zu", array_length, notif_parms_count));
         }
 
 {% for arg in notif.args %}
-        auto {{arg.name}} = mp_read<{{arg.type_out}}>(mpack_node_array_at(node, {{loop.index0}}));
+        auto {{arg.name}} = mp_read<{{arg.type_out}}>(mpack_node_array_at(event_node, {{loop.index0}}));
 {% endfor %}
         pclient->on_{{notif.name}}({% for arg in notif.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %});
         return;
@@ -430,11 +432,19 @@ int64_t libnvc::api_client::poll_one()
                     throw std::runtime_error(str_fflprintf(": Get unknown node string: %s", redraw_node_name.c_str()));
                 }
 
-                auto event_node = mpack_node_array_at(rootopt.value(), 2);
-                size_t event_length = mpack_node_array_length(event_node);
+                auto event_group_node = mpack_node_array_at(rootopt.value(), 2);
+                size_t event_group_length = mpack_node_array_length(event_group_node);
 
-                for(size_t index = 0; index < event_length; ++index){
-                    inn_dispatch_notif(mpack_node_array_at(event_node, index), this);
+                for(size_t group_index = 0; group_index < event_group_length; ++group_index){
+                    auto event_array = mpack_node_array_at(event_group_node, group_index);
+                    size_t event_array_length = mpack_node_array_length(event_array);
+
+                    auto name_node = mpack_node_array_at(event_array, 0);
+                    auto event_name = mp_read<std::string>(name_node);
+
+                    for(size_t event_index = 1; event_index < event_array_length; ++event_index){
+                        inn_dispatch_notif(event_name.c_str(), mpack_node_array_at(event_array, event_index), this);
+                    }
                 }
                 return 0;
             }
