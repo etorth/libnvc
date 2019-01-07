@@ -160,7 +160,7 @@ class nvimNativeType:
         raise UnsupportedType(typename)
 
 
-class nvimReqNativeArg:
+class nvimNativeArg:
     """
     To supportr [nvimArg.type, nvimArg.name]
     """
@@ -185,7 +185,7 @@ class nvimReq:
         try:
             self.return_type = nvimNativeType.nativeType(self.func['return_type'], out = True)
             for param in self.func['parameters']:
-                self.args.append(nvimReqNativeArg(param[0], param[1]))
+                self.args.append(nvimNativeArg(param[0], param[1]))
         except UnsupportedType as ex:
             print('Found unsupported type(%s) when adding function %s(), skipping' % (ex, self.name))
             return
@@ -215,8 +215,15 @@ class nvimReq:
 
 class nvimNotif:
     def __init__(self, ui_event):
-        self.name = ui_event['name']
-        self.args = ui_event['parameters']
+        self.ui_event = ui_event
+        self.name     = self.ui_event['name']
+        self.args     = []
+        try:
+            for param in self.ui_event['parameters']:
+                self.args.append(nvimNativeArg(param[0], param[1]))
+        except UnsupportedType as ex:
+            print('Found unsupported type(%s) when adding notification %s(), skipping' % (ex, self.name))
+            return
 
 
 def main():

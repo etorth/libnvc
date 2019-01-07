@@ -645,6 +645,14 @@ namespace libnvc
             }
 
 {% endfor %}
+
+        public:
+            // ui notifications
+            // notif doesn't have return
+{% for notif in nvim_notifs %}
+            virtual void on_{{notif.name}}({% for arg in notif.args%}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %});
+{% endfor %}
+
     };
 }
 
