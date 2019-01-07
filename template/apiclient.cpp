@@ -119,6 +119,12 @@ namespace
         return mpack_node_i64(node);
     }
 
+    template<> inline uint64_t mp_read<uint64_t>(mpack_node_t node)
+    {
+        check_node_type(node, mpack_type_uint);
+        return mpack_node_u64(node);
+    }
+
     template<> inline double mp_read<double>(mpack_node_t node)
     {
         check_node_type(node, mpack_type_double);
@@ -159,6 +165,10 @@ namespace
             case mpack_type_int:
                 {
                     return mp_read<int64_t>(node);
+                }
+            case mpack_type_uint:
+                {
+                    return (int64_t)(mp_read<uint64_t>(node));
                 }
             case mpack_type_double:
                 {
