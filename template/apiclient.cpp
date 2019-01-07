@@ -321,13 +321,13 @@ static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
     if(false){
 {% for notif in nvim_notifs %}
     }else if(std::strcmp(notif_name, "{{notif.name}}") == 0){
-        size_t notif_parms_count = {{notif.args|length}};
-        if(notif_parms_count == 0){
-            pclient->on_{{notif.name}}();
-            return;
-        }
-
+{% if notif.args|length == 0 %}
+        pclient->on_{{notif.name}}();
+        return;
+{% else %}
+        const size_t notif_parms_count = {{notif.args|length}};
         const size_t array_length = mpack_node_array_length(node);
+
         if(notif_parms_count != array_length){
             throw std::runtime_error(str_fflprintf(": Incorrect parameter count: %zu, expecting %zu", array_length, notif_parms_count));
         }
@@ -337,6 +337,7 @@ static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
 {% endfor %}
         pclient->on_{{notif.name}}({% for arg in notif.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %});
         return;
+{% endif %}
 {% endfor %}
     }else{
         throw std::runtime_error(str_fflprintf(": Get unknown notification: %s", notif_name));
@@ -426,14 +427,14 @@ int64_t libnvc::api_client::poll_one()
                 auto redraw_node_name = mp_read<std::string>(redraw_node);
 
                 if(redraw_node_name != "redraw"){
-                    throw std::runtime_error(stf_fflprintf(": Get unknown node string: %s", redraw_node_name.c_str()));
+                    throw std::runtime_error(str_fflprintf(": Get unknown node string: %s", redraw_node_name.c_str()));
                 }
 
                 auto event_node = mpack_node_array_at(rootopt.value(), 2);
                 size_t event_length = mpack_node_array_length(event_node);
 
                 for(size_t index = 0; index < event_length; ++index){
-                    inn_dispatch_notif(mpack_node_array_at(index), this);
+                    inn_dispatch_notif(mpack_node_array_at(event_node, index), this);
                 }
                 return 0;
             }
