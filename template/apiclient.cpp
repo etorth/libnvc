@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 
+#include <cstdint>
 #include <cstring>
 #include <optional>
 #include <stdexcept>
@@ -39,7 +40,7 @@ namespace libnvc
                 }
                 // checked the code
                 // seems this function always succeeds
-                mpack_tree_init_stream(&m_tree, &read_iodev, piodev, 1024 * 1024, 1024);
+                mpack_tree_init_stream(&m_tree, &read_iodev, piodev, SIZE_MAX, 1024);
             }
 
         public:

@@ -650,7 +650,7 @@ namespace libnvc
 
 namespace libnvc
 {
-    class gui_client: public api_client
+    class nvim_box: public api_client
     {
     };
 }
