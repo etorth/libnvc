@@ -152,17 +152,21 @@ namespace
         libnvc::object obj{};
         auto tag = mpack_node_tag(node);
         switch(auto type = mpack_tag_type(&tag)){
-            case mpack_type_str:
+            case mpack_type_bool:
                 {
-                    return mp_read<std::string>(node);
+                    return mp_read<bool>(node);
                 }
             case mpack_type_int:
                 {
                     return mp_read<int64_t>(node);
                 }
-            case mpack_type_bool:
+            case mpack_type_double:
                 {
-                    return mp_read<bool>(node);
+                    return mp_read<double>(node);
+                }
+            case mpack_type_str:
+                {
+                    return mp_read<std::string>(node);
                 }
             default:
                 {
@@ -312,16 +316,30 @@ static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
     // assume the node is a string
     // need check in caller
 
-    const char *name = mpack_node_str(node);
-    size_t length = mpack_node_strlen(node);
+    const char *notif_name = mpack_node_str(node);
 
     if(false){
 {% for notif in nvim_notifs %}
-    }else if(std::strcmp(name, "{{notif.name}}") == 0){
-        pclient->on_{{notif.name}}();
+    }else if(std::strcmp(notif_name, "{{notif.name}}") == 0){
+        size_t notif_parms_count = {{notif.args|length}};
+        if(notif_parms_count == 0){
+            pclient->on_{{notif.name}}();
+            return;
+        }
+
+        const size_t array_length = mpack_node_array_length(node);
+        if(notif_parms_count != array_length){
+            throw std::runtime_error(str_fflprintf(": Incorrect parameter count: %zu, expecting %zu", array_length, notif_parms_count));
+        }
+
+{% for arg in notif.args %}
+        auto {{arg.name}} = mp_read<{{arg.type_out}}>(mpack_node_array_at(node, {{loop.index0}}));
+{% endfor %}
+        pclient->on_{{notif.name}}({% for arg in notif.args %}{{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %});
+        return;
 {% endfor %}
     }else{
-        throw std::runtime_error(str_fflprintf(": Get unknown notification: %s", name));
+        throw std::runtime_error(str_fflprintf(": Get unknown notification: %s", notif_name));
     }
 }
 

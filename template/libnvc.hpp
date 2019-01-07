@@ -305,7 +305,7 @@ namespace libnvc
     };
 
     using void_type = struct _void_type;
-    using object = std::variant<int64_t, bool, double, std::string>;
+    using object = std::variant<bool, int64_t, double, std::string>;
 
     using resp_variant = std::variant<libnvc::void_type,
 {% for result_type in nvim_reqs|map(attribute='return_type')|unique %}
@@ -648,9 +648,12 @@ namespace libnvc
 
         public:
             // ui notifications
-            // notif doesn't have return
+            // notif doesn't have return value, do nothing by default
+            // it's impossible for jinja2 to generate proper code for each notification
 {% for notif in nvim_notifs %}
-            virtual void on_{{notif.name}}({% for arg in notif.args%}{{arg.type}} {{arg.name}}{% if not loop.last %}, {% endif %}{% endfor %});
+            virtual void on_{{notif.name}}({% for arg in notif.args%}{{arg.type}}{% if not loop.last %}, {% endif %}{% endfor %})
+            {
+            }
 {% endfor %}
 
     };
