@@ -698,6 +698,7 @@ namespace libnvc
 {% for notif in nvim_notifs %}
             virtual void on_{{notif.name}}({% for arg in notif.args%}{{arg.type}}{% if not loop.last %}, {% endif %}{% endfor %})
             {
+                libnvc::log(libnvc::LOG_DEBUG, "Ignored notif: {{notif.name}}");
             }
 {% endfor %}
 
