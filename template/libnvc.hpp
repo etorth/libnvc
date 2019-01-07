@@ -303,9 +303,54 @@ namespace libnvc
     {
         int unused = 0;
     };
-
     using void_type = struct _void_type;
-    using object = std::variant<bool, int64_t, double, std::string>;
+
+
+    // TODO: need a better implementation
+    // using helper class object_wrapper since  we can't define recursive type in cpp
+
+    // be careful of std::vector<object> vs std::vector<object_wrapper>
+    // this can easily give bug
+    class object_wrapper;
+    using object = std::variant<
+          bool,
+          int64_t,
+          double,
+          std::string,
+          std::vector<libnvc::object_wrapper>,
+          std::map<std::string, libnvc::object_wrapper>
+    >;
+
+    class object_wrapper
+    {
+        public:
+            object_wrapper() = default;
+
+        public:
+            template<typename T> object_wrapper(T t)
+            {
+                m_ptr = std::make_shared<libnvc::object>(t);
+            }
+
+        private:
+            // use shared_ptr not unique_ptr
+            // the sematics of object_wrapper is a wrapper of an existing object
+            std::shared_ptr<libnvc::object> m_ptr;
+
+            // don't define operator object ()
+            // since which returns a copy of the included object
+
+        public:
+            libnvc::object &ref()
+            {
+                return *(m_ptr.get());
+            }
+
+            const libnvc::object &ref() const
+            {
+                return *(m_ptr.get());
+            }
+    };
 
     using resp_variant = std::variant<libnvc::void_type,
 {% for result_type in nvim_reqs|map(attribute='return_type')|unique %}

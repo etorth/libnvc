@@ -153,38 +153,6 @@ namespace
         return res;
     }
 
-    template<> inline libnvc::object mp_read<libnvc::object>(mpack_node_t node)
-    {
-        libnvc::object obj{};
-        auto tag = mpack_node_tag(node);
-        switch(auto type = mpack_tag_type(&tag)){
-            case mpack_type_bool:
-                {
-                    return mp_read<bool>(node);
-                }
-            case mpack_type_int:
-                {
-                    return mp_read<int64_t>(node);
-                }
-            case mpack_type_uint:
-                {
-                    return (int64_t)(mp_read<uint64_t>(node));
-                }
-            case mpack_type_double:
-                {
-                    return mp_read<double>(node);
-                }
-            case mpack_type_str:
-                {
-                    return mp_read<std::string>(node);
-                }
-            default:
-                {
-                    throw std::runtime_error(str_fflprintf(": Unsupport type: %s", mpack_type_to_string(type)));
-                }
-        }
-    }
-
     template<typename T> std::vector<T> mp_read_array(mpack_node_t node)
     {
         check_node_type(node, mpack_type_array);
@@ -237,6 +205,56 @@ namespace
     template<> inline std::map<std::string, libnvc::object> mp_read<std::map<std::string, libnvc::object>>(mpack_node_t node)
     {
         return mp_read_map<std::string, libnvc::object>(node);
+    }
+
+    template<> inline libnvc::object mp_read<libnvc::object>(mpack_node_t node)
+    {
+        libnvc::object obj{};
+        auto tag = mpack_node_tag(node);
+        switch(auto type = mpack_tag_type(&tag)){
+            case mpack_type_bool:
+                {
+                    return mp_read<bool>(node);
+                }
+            case mpack_type_int:
+                {
+                    return mp_read<int64_t>(node);
+                }
+            case mpack_type_uint:
+                {
+                    return (int64_t)(mp_read<uint64_t>(node));
+                }
+            case mpack_type_double:
+                {
+                    return mp_read<double>(node);
+                }
+            case mpack_type_str:
+                {
+                    return mp_read<std::string>(node);
+                }
+            case mpack_type_map:
+                {
+                    auto res_map = mp_read<std::map<std::string, libnvc::object>>(node);
+                    std::map<std::string, libnvc::object_wrapper> res_map_wrapper;
+                    for(auto &item: res_map){
+                        res_map_wrapper[item.first] = libnvc::object_wrapper(item.second);
+                    }
+                    return libnvc::object(res_map_wrapper);
+                }
+            case mpack_type_array:
+                {
+                    auto res_vec = mp_read<std::vector<libnvc::object>>(node);
+                    std::vector<libnvc::object_wrapper> res_vec_wrapper;
+                    for(auto &item: res_vec){
+                        res_vec_wrapper.emplace_back(libnvc::object_wrapper(item));
+                    }
+                    return libnvc::object(res_vec_wrapper);
+                }
+            default:
+                {
+                    throw std::runtime_error(str_fflprintf(": Unsupport type: %s", mpack_type_to_string(type)));
+                }
+        }
     }
 }
 
