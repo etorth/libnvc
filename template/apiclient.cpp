@@ -283,7 +283,7 @@ template<size_t reqid> libnvc::resp_variant inn_make_resp_variant([[maybe_unused
     }
 }
 
-static void inn_dispatch(size_t reqid, int64_t msgid, mpack_node_t node, std::map<int64_t, std::function<void(libnvc::resp_variant)>> &resp_pool)
+static void inn_dispatch_req(size_t reqid, int64_t msgid, mpack_node_t node, std::map<int64_t, std::function<void(libnvc::resp_variant)>> &resp_pool)
 {
     // there is no argument checking
     // only call this function in api_client::poll
@@ -301,6 +301,27 @@ static void inn_dispatch(size_t reqid, int64_t msgid, mpack_node_t node, std::ma
             {
                 throw std::invalid_argument(str_fflprintf(": Invalid reqid: %zu", reqid));
             }
+    }
+}
+
+static void inn_dispatch_notif(mpack_node_t node, libnvc::api_client *pclient)
+{
+    // not argument check
+    // we can use mpack_node_enum() to make switch-case branches
+
+    // assume the node is a string
+    // need check in caller
+
+    const char *name = mpack_node_str(node);
+    size_t length = mpack_node_strlen(node);
+
+    if(false){
+{% for notif in nvim_notifs %}
+    }else if(std::strcmp(name, "{{notif.name}}") == 0){
+        pclient->on_{{notif.name}}();
+{% endfor %}
+    }else{
+        throw std::runtime_error(str_fflprintf(": Get unknown notification: %s", name));
     }
 }
 
@@ -368,7 +389,7 @@ int64_t libnvc::api_client::poll_one()
                 }
 
                 // we get valid RESP, for non-return REQ nvim just returns nil
-                // need inn_dispatch to different response handler
+                // need inn_dispatch_req to different response handler
 
                 if(m_onresp.find(msgid) == m_onresp.end()){
                     if(m_onresperr.find(msgid) != m_onresperr.end()){
@@ -378,11 +399,24 @@ int64_t libnvc::api_client::poll_one()
                     return 0;
                 }
 
-                inn_dispatch(req_id, msgid, mpack_node_array_at(rootopt.value(), 3), m_onresp);
+                inn_dispatch_req(req_id, msgid, mpack_node_array_at(rootopt.value(), 3), m_onresp);
                 return msgid;
             }
         case libnvc::NOTIF:
             {
+                auto redraw_node = mpack_node_array_at(rootopt.value(), 1);
+                auto redraw_node_name = mp_read<std::string>(redraw_node);
+
+                if(redraw_node_name != "redraw"){
+                    throw std::runtime_error(stf_fflprintf(": Get unknown node string: %s", redraw_node_name.c_str()));
+                }
+
+                auto event_node = mpack_node_array_at(rootopt.value(), 2);
+                size_t event_length = mpack_node_array_length(event_node);
+
+                for(size_t index = 0; index < event_length; ++index){
+                    inn_dispatch_notif(mpack_node_array_at(index), this);
+                }
                 return 0;
             }
         default:
