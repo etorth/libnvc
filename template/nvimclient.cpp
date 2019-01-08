@@ -69,10 +69,18 @@ void libnvc::nvim_client::on_put(const std::string &str)
         auto code_length = peek_utf8_code(str.data() + done_length, str.length(), &utf8_code);
 
         m_currboard->get_cell().utf8_code = utf8_code;
+        if(true){
+            m_currboard->advance_cursor(1);
+        }
         done_length += code_length;
     }
 
     if(done_length != str.length()){
         throw std::runtime_error(str_fflprintf(": Parse utf8 string failed: \"%s\"", str.c_str()));
     }
+}
+
+void libnvc::nvim_client::on_cursor_goto(int64_t row, int64_t col)
+{
+    m_currboard->set_cursor(col, row);
 }

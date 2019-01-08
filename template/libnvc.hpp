@@ -718,7 +718,9 @@ namespace libnvc
         uint32_t color_fg;
         uint32_t color_bg;
         uint32_t color_sp;
+
         uint32_t utf8_code;
+        uint32_t mask_bits;
 
         CELL()
         {
@@ -734,6 +736,11 @@ namespace libnvc
         void clear()
         {
             std::memset(this, 0, sizeof(CELL));
+        }
+
+        bool double_width() const
+        {
+            return mask_bits;
         }
     };
 
@@ -783,6 +790,31 @@ namespace libnvc
                 return m_grid_height;
             }
 
+        private:
+            size_t cursor_off() const
+            {
+                return cursor_y() * width() + cursor_x();
+            }
+
+        public:
+            void set_cursor(size_t loc)
+            {
+                m_cursor_x = loc % width();
+                m_cursor_y = loc / width();
+            }
+
+            void set_cursor(size_t x, size_t y)
+            {
+                m_cursor_x = x;
+                m_cursor_y = y;
+            }
+
+        public:
+            void advance_cursor(size_t pos)
+            {
+                set_cursor(cursor_off() + pos);
+            }
+
         public:
             std::unique_ptr<board> clone() const
             {
@@ -792,13 +824,13 @@ namespace libnvc
         private:
             CELL &get_cell()
             {
-                return m_cells.at(cursor_y() * width() + cursor_x());
+                return m_cells.at(cursor_off());
             }
 
         public:
             const CELL &get_cell() const
             {
-                return m_cells.at(cursor_y() * width() + cursor_x());
+                return m_cells.at(cursor_off());
             }
     };
 
@@ -819,6 +851,7 @@ namespace libnvc
 
         private:
             void on_put(const std::string &);
+            void on_cursor_goto(int64_t, int64_t);
     };
 
     class nvim_widget
