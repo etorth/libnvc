@@ -258,6 +258,35 @@ namespace
     }
 }
 
+std::string libnvc::print_object(const libnvc::object &obj)
+{
+    // check sample code from:
+    // https://zh.cppreference.com/w/cpp/utility/variant/visit
+
+    std::string res;
+    std::visit([&res](auto && arg)
+    {
+        using T = std::decay_t<decltype(arg)>;
+
+        if constexpr (std::is_same_v<T, uint64_t>){
+            res += std::to_string(arg);
+            return;
+        }
+
+        if constexpr (std::is_same_v<T, std::string>){
+            res += arg;
+            return;
+        }
+
+        if constexpr (std::is_same_v<T, double>){
+            res += std::to_string(arg);
+            return;
+        }
+
+    }, obj);
+    return res;
+}
+
 libnvc::api_client::api_client(libnvc::io_device *piodev)
     : m_decoder(std::make_unique<stream_decoder>(piodev))
     , m_seqid(1)

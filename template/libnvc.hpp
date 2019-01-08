@@ -707,6 +707,11 @@ namespace libnvc
 
 namespace libnvc
 {
+    std::string print_object(const libnvc::object &);
+}
+
+namespace libnvc
+{
     class nvim_box: public api_client
     {
     };
