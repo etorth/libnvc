@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <variant>
+#include <cstring>
 #include <cstdint>
 #include <cstddef>
 #include <functional>
@@ -712,18 +713,106 @@ namespace libnvc
 
 namespace libnvc
 {
-    class nvim_box: public api_client
+    struct CELL
+    {
+        uint32_t utf8code;
+        uint32_t color_fg;
+        uint32_t color_bg;
+        uint32_t color_sp;
+
+        CELL(uint32_t bg)
+        {
+            clear();
+            color_bg = bg;
+        }
+
+        void clear()
+        {
+            std::memset(this, 0, sizeof(CELL));
+        }
+    };
+
+    class board
     {
         private:
-            struct CELL
-            {
-                uint32_t utf8code;
-                uint32_t color_fg;
-                uint32_t color_bg;
-                uint32_t color_sp;
+            size_t m_grid_width;
+            size_t m_grid_height;
 
-                CELL(uint32_t);
-            };
+        private:
+            size_t m_cursor_x;
+            size_t m_cursor_y;
+
+        private:
+            std::vector<libnvc::CELL> m_cells;
+
         public:
+            board(size_t grid_width, size_t grid_height)
+                : m_grid_width(grid_width)
+                , m_grid_height(grid_height)
+                , m_cursor_x(0)
+                , m_cursor_y(0)
+            {}
+
+        public:
+            size_t cursor_x() const
+            {
+                return m_cursor_x;
+            }
+
+            size_t cursor_y() const
+            {
+                return m_cursor_y;
+            }
+
+            size_t width() const
+            {
+                return m_grid_width;
+            }
+
+            size_t height() const
+            {
+                return m_grid_height;
+            }
+
+        public:
+            std::unique_ptr<board> clone() const
+            {
+                return std::make_unique<board>(*this);
+            }
+
+        private:
+            CELL &get_cell()
+            {
+                return m_cells.at(cursor_y() * width() + cursor_x());
+            }
+
+        public:
+            const CELL &get_cell() const
+            {
+                return m_cells.at(cursor_y() * width() + cursor_x());
+            }
+    };
+
+    class nvim_widget: public api_client
+    {
+        private:
+            std::unique_ptr<board> m_currboard;
+            std::unique_ptr<board> m_backboard;
+
+        public:
+            nvim_widget(size_t, size_t);
+
+        private:
+            void flush_board()
+            {
+                m_backboard = m_currboard->clone();
+            }
+
+        private:
+            void on_put(const std::string &);
+    };
+
+    class nvim_box: public libnvc::nvim_widget
+    {
     };
 }
