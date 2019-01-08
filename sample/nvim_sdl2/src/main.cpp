@@ -26,7 +26,7 @@
 int main()
 {
     nvim_process nvim_proc;
-    libnvc::api_client client(&nvim_proc);
+    libnvc::nvim_client client(&nvim_proc, 100, 100);
 
     // attach the ui
     // this function responds slow

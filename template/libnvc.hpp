@@ -715,10 +715,15 @@ namespace libnvc
 {
     struct CELL
     {
-        uint32_t utf8code;
         uint32_t color_fg;
         uint32_t color_bg;
         uint32_t color_sp;
+        uint32_t utf8_code;
+
+        CELL()
+        {
+            clear();
+        }
 
         CELL(uint32_t bg)
         {
@@ -734,6 +739,9 @@ namespace libnvc
 
     class board
     {
+        private:
+            friend class nvim_client;
+
         private:
             size_t m_grid_width;
             size_t m_grid_height;
@@ -751,6 +759,7 @@ namespace libnvc
                 , m_grid_height(grid_height)
                 , m_cursor_x(0)
                 , m_cursor_y(0)
+                , m_cells(grid_width * grid_height)
             {}
 
         public:
@@ -793,14 +802,14 @@ namespace libnvc
             }
     };
 
-    class nvim_widget: public api_client
+    class nvim_client: public api_client
     {
         private:
             std::unique_ptr<board> m_currboard;
             std::unique_ptr<board> m_backboard;
 
         public:
-            nvim_widget(size_t, size_t);
+            nvim_client(libnvc::io_device *, size_t, size_t);
 
         private:
             void flush_board()
@@ -812,7 +821,9 @@ namespace libnvc
             void on_put(const std::string &);
     };
 
-    class nvim_box: public libnvc::nvim_widget
+    class nvim_widget
     {
+        private:
+            libnvc::nvim_client *m_client;
     };
 }
