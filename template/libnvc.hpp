@@ -714,5 +714,16 @@ namespace libnvc
 {
     class nvim_box: public api_client
     {
+        private:
+            struct CELL
+            {
+                uint32_t utf8code;
+                uint32_t color_fg;
+                uint32_t color_bg;
+                uint32_t color_sp;
+
+                CELL(uint32_t);
+            };
+        public:
     };
 }
