@@ -117,3 +117,79 @@ void libnvc::nvim_client::on_cursor_goto(int64_t row, int64_t col)
 {
     m_currboard->set_cursor(col, row);
 }
+
+void libnvc::nvim_client::on_grid_cursor_goto(int64_t, int64_t row, int64_t col)
+{
+    m_currboard->set_cursor(col, row);
+}
+
+size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str, int64_t, int repeat)
+{
+    uint32_t utf8_code = 0;
+    peek_utf8_code(str.data(), str.length(), &utf8_code);
+
+    switch(auto column_width = measure_utf8_column_width(utf8_code)){
+        case 2:
+            {
+                if(repeat != 1){
+                    throw std::runtime_error(str_fflprintf(": Protocol error: wide utf8 char get column width: %d", column_width));
+                }
+
+                m_currboard->get_cell(x, y).clear();
+                m_currboard->get_cell(x, y).utf8_code  = utf8_code;
+                m_currboard->get_cell(x, y).mask_bits |= 1;
+
+                m_currboard->get_cell(x + 1, y).clear();
+                return 2;
+            }
+        case 1:
+            {
+                for(int64_t pos = 0; pos < repeat; ++pos){
+                    m_currboard->get_cell(x + pos, y).clear();
+                    m_currboard->get_cell(x + pos, y).utf8_code = utf8_code;
+                }
+                return repeat;
+            }
+        default:
+            {
+                throw std::runtime_error(str_fflprintf(": Invalid utf8 column width: %d", column_width));
+            }
+    }
+}
+
+void libnvc::nvim_client::on_grid_line(int64_t, int64_t row, int64_t col_start, const std::vector<libnvc::object> & data)
+{
+    size_t x = col_start;
+    size_t y = row;
+
+    // check doc of grid_line
+    // each cell contains [text(, hl_id, repeat)]
+    int64_t hl_id = 0;
+
+    for(size_t index = 0; index < data.size(); ++index){
+        int64_t repeat = 1;
+        std::string utf8char = "";
+        switch(auto &vec_cell = std::get<std::vector<libnvc::object_wrapper>>(data[index]); vec_cell.size()){
+            case 3:
+                {
+                    repeat = std::get<int64_t>(vec_cell[2].ref());
+                    [[fallthrough]];
+                }
+            case 2:
+                {
+                    hl_id = std::get<int64_t>(vec_cell[1].ref());
+                    [[fallthrough]];
+                }
+            case 1:
+                {
+                    utf8char = std::get<std::string>(vec_cell[0].ref());
+                    break;
+                }
+            default:
+                {
+                    throw std::runtime_error(str_fflprintf(": Invalid array for cell (%zu, %zu)", x, y));
+                }
+        }
+        x += set_cell(x, y, utf8char, hl_id, repeat);
+    }
+}

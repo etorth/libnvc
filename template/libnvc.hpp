@@ -823,6 +823,18 @@ namespace libnvc
             }
 
         private:
+            CELL &get_cell(size_t x, size_t y)
+            {
+                return m_cells.at(y * width() + x);
+            }
+
+        public:
+            const CELL &get_cell(size_t x, size_t y) const
+            {
+                return m_cells.at(y * width() + x);
+            }
+
+        private:
             CELL &get_cell()
             {
                 return m_cells.at(cursor_off());
@@ -850,9 +862,27 @@ namespace libnvc
                 m_backboard = m_currboard->clone();
             }
 
+        public:
+            size_t width() const
+            {
+                return m_currboard->width();
+            }
+
+            size_t height() const
+            {
+                return m_currboard->height();
+            }
+
         private:
             void on_put(const std::string &);
             void on_cursor_goto(int64_t, int64_t);
+            void on_grid_cursor_goto(int64_t, int64_t, int64_t);
+
+        private:
+            void on_grid_line(int64_t, int64_t, int64_t, const std::vector<libnvc::object> &);
+
+        private:
+            size_t set_cell(size_t, size_t, const std::string &, int64_t, int);
     };
 
     class nvim_widget
