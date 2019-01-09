@@ -30,7 +30,7 @@ int main()
 
     // attach the ui
     // this function responds slow
-    client.nvim_ui_attach(100, 100, {});
+    client.nvim_ui_attach(100, 100, {{"rgb", true}, {"ext_linegrid", true}});
 
     client.forward<libnvc::reqid("nvim_input")>({"$i123<CR>123<ESC>"}, [](int64_t len_done)
     {

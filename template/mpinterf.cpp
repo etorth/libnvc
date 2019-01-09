@@ -102,6 +102,11 @@ void libnvc::mpinterf::writer::write(int64_t val)
     mpack_write_i64(reinterpret_cast<mpack_writer_t *>(storage()), val);
 }
 
+void libnvc::mpinterf::writer::write(bool val)
+{
+    mpack_write_bool(reinterpret_cast<mpack_writer_t *>(storage()), val);
+}
+
 void libnvc::mpinterf::writer::write(double val)
 {
     mpack_write_double(reinterpret_cast<mpack_writer_t *>(storage()), val);

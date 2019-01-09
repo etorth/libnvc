@@ -445,6 +445,7 @@ namespace libnvc::mpinterf
 
         private:
             void write();
+            void write(bool);
             void write(double);
             void write(int64_t);
             void write(const char *);
@@ -677,7 +678,7 @@ namespace libnvc
 {% endif %}
                 auto on_resperr = [](int64_t ec, std::string emsg)
                 {
-                    throw std::runtime_error(((std::string("Error for request\"{{req.name}}\": [") + std::to_string(ec) + ", ") + emsg) + "]");
+                    throw std::runtime_error(((std::string("Error for request \"{{req.name}}\": [") + std::to_string(ec) + ", ") + emsg) + "]");
                 };
 
                 constexpr size_t req_id = libnvc::reqid("{{req.name}}");
