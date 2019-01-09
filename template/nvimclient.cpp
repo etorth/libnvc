@@ -207,7 +207,54 @@ void libnvc::nvim_client::on_grid_line(int64_t, int64_t row, int64_t col_start, 
     }
 }
 
-void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::string, libnvc::object> &, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &)
+void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::string, libnvc::object> &rgb_attrs, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &)
 {
-    m_hldefs[id] = hl_attrdef();
+    hl_attrdef this_attrdef;
+    for(auto &elem: rgb_attrs){
+        if(elem.first == "foreground"){
+            this_attrdef.color_fg = std::get<int64_t>(elem.second) & 0x0000000000ffffff;
+            this_attrdef.color_fg_defined = 1;
+            continue;
+        }
+
+        if(elem.first == "background"){
+            this_attrdef.color_bg = std::get<int64_t>(elem.second) & 0x0000000000ffffff;
+            this_attrdef.color_bg_defined = 1;
+            continue;
+        }
+
+        if(elem.first == "special"){
+            this_attrdef.color_sp = std::get<int64_t>(elem.second) & 0x0000000000ffffff;
+            this_attrdef.color_sp_defined = 1;
+            continue;
+        }
+
+        if(elem.first == "reverse"){
+            this_attrdef.reverse = 1;
+            continue;
+        }
+
+        if(elem.first == "italic"){
+            this_attrdef.italic = 1;
+            continue;
+        }
+
+        if(elem.first == "bold"){
+            this_attrdef.bold = 1;
+            continue;
+        }
+
+        if(elem.first == "underline"){
+            this_attrdef.underline = 1;
+            continue;
+        }
+
+        if(elem.first == "undercurl"){
+            this_attrdef.undercurl = 1;
+            continue;
+        }
+    }
+
+    m_hldefs.resize(id + 1);
+    m_hldefs[id] = this_attrdef;
 }

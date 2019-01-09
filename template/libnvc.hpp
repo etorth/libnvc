@@ -19,6 +19,7 @@
 #pragma once
 
 #include <map>
+#include <vector>
 #include <memory>
 #include <variant>
 #include <cstring>
@@ -861,15 +862,24 @@ namespace libnvc
         private:
             struct hl_attrdef
             {
-                uint32_t color_fg;
-                uint32_t color_bg;
-                uint32_t color_sp;
+                uint32_t color_fg : 24;
+                uint32_t color_bg : 24;
+                uint32_t color_sp : 24;
 
-                uint32_t reversed  : 1;
+                uint32_t color_fg_defined : 1;
+                uint32_t color_bg_defined : 1;
+                uint32_t color_sp_defined : 1;
+
+                uint32_t reverse   : 1;
                 uint32_t italic    : 1;
                 uint32_t bold      : 1;
                 uint32_t underline : 1;
                 uint32_t undercurl : 1;
+
+                hl_attrdef()
+                {
+                    clear();
+                }
 
                 void clear()
                 {
@@ -878,7 +888,7 @@ namespace libnvc
             };
 
         private:
-            std::unordered_map<int64_t, hl_attrdef> m_hldefs;
+            std::vector<hl_attrdef> m_hldefs;
 
         private:
             std::unordered_map<std::string, libnvc::object> m_options;
