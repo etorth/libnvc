@@ -879,6 +879,9 @@ namespace libnvc
             void on_grid_cursor_goto(int64_t, int64_t, int64_t);
 
         private:
+            void on_flush();
+
+        private:
             void on_grid_line(int64_t, int64_t, int64_t, const std::vector<libnvc::object> &);
 
         private:

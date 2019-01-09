@@ -78,6 +78,17 @@ libnvc::nvim_client::nvim_client(libnvc::io_device *pdevice, size_t width, size_
     , m_backboard()
 {}
 
+void libnvc::nvim_client::on_flush()
+{
+    for(size_t y = 0; y < height(); ++y){
+        std::string line;
+        for(size_t x = 0; x < width(); ++x){
+            line += (const char *)(&(m_currboard->get_cell(x, y).utf8_code));
+        }
+        libnvc::log(LOG_INFO, line.c_str());
+    }
+}
+
 void libnvc::nvim_client::on_put(const std::string &str)
 {
     size_t done_length = 0;
