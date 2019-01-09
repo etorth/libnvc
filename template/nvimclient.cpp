@@ -74,6 +74,8 @@ static size_t peek_utf8_code(const char *str, size_t length, uint32_t *pcode)
 
 libnvc::nvim_client::nvim_client(libnvc::io_device *pdevice, size_t width, size_t height)
     : libnvc::api_client(pdevice)
+    , m_hldefs()
+    , m_options()
     , m_currboard(std::make_unique<libnvc::board>(width, height))
     , m_backboard()
 {}
@@ -203,4 +205,9 @@ void libnvc::nvim_client::on_grid_line(int64_t, int64_t row, int64_t col_start, 
         }
         x += set_cell(x, y, utf8char, hl_id, repeat);
     }
+}
+
+void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::string, libnvc::object> &, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &)
+{
+    m_hldefs[id] = hl_attrdef();
 }

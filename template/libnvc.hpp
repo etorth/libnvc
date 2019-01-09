@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <functional>
 #include <type_traits>
+#include <unordered_map>
 
 namespace libnvc
 {
@@ -771,6 +772,14 @@ namespace libnvc
             {}
 
         public:
+            void clear()
+            {
+                for(auto &cell: m_cells){
+                    cell.clear();
+                }
+            }
+
+        public:
             size_t cursor_x() const
             {
                 return m_cursor_x;
@@ -850,6 +859,31 @@ namespace libnvc
     class nvim_client: public api_client
     {
         private:
+            struct hl_attrdef
+            {
+                uint32_t color_fg;
+                uint32_t color_bg;
+                uint32_t color_sp;
+
+                uint32_t reversed  : 1;
+                uint32_t italic    : 1;
+                uint32_t bold      : 1;
+                uint32_t underline : 1;
+                uint32_t undercurl : 1;
+
+                void clear()
+                {
+                    std::memset(this, 0, sizeof(hl_attrdef));
+                }
+            };
+
+        private:
+            std::unordered_map<int64_t, hl_attrdef> m_hldefs;
+
+        private:
+            std::unordered_map<std::string, libnvc::object> m_options;
+
+        private:
             std::unique_ptr<board> m_currboard;
             std::unique_ptr<board> m_backboard;
 
@@ -873,15 +907,31 @@ namespace libnvc
                 return m_currboard->height();
             }
 
-        private:
+        public:
             void on_put(const std::string &);
             void on_cursor_goto(int64_t, int64_t);
-            void on_grid_cursor_goto(int64_t, int64_t, int64_t);
 
-        private:
+        public:
+            void on_option_set(const std::string &option, libnvc::object obj)
+            {
+                m_options[option] = obj;
+            }
+
+        public:
             void on_flush();
 
-        private:
+        public:
+            void on_grid_clear(int64_t)
+            {
+                m_currboard->clear();
+            }
+
+            void on_grid_cursor_goto(int64_t, int64_t, int64_t);
+
+        public:
+            void on_hl_attr_define(int64_t, const std::map<std::string, libnvc::object> &, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &);
+
+        public:
             void on_grid_line(int64_t, int64_t, int64_t, const std::vector<libnvc::object> &);
 
         private:
