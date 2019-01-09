@@ -20,6 +20,23 @@
 #include "libnvc.hpp"
 #include "strfunc.hpp"
 
+static int measure_utf8_column_width(uint32_t utf8_code)
+{
+    // check stackoverflow:
+    // https://stackoverflow.com/questions/5117393/number-of-character-cells-used-by-string
+    std::setlocale(LC_ALL, "");
+
+    char buf[8];
+    std::memset(buf, 0, 8);
+    std::memcpy(buf, &utf8_code, 4);
+
+    wchar_t wcbuf[2];
+    if(std::mbstowcs(wcbuf, buf, 2) != 1){
+        throw std::runtime_error(str_fflprintf(": Failed to convert to wide char for column meansurement"));
+    }
+    return wcwidth(wcbuf[0]);
+}
+
 static size_t peek_utf8_code(const char *str, size_t length, uint32_t *pcode)
 {
     if(str == nullptr){
@@ -68,9 +85,25 @@ void libnvc::nvim_client::on_put(const std::string &str)
         uint32_t utf8_code = 0;
         auto code_length = peek_utf8_code(str.data() + done_length, str.length(), &utf8_code);
 
+        m_currboard->get_cell().clear();
         m_currboard->get_cell().utf8_code = utf8_code;
-        if(true){
-            m_currboard->advance_cursor(1);
+        switch(auto column_width = measure_utf8_column_width(utf8_code)){
+            case 1:
+                {
+                    m_currboard->advance_cursor(1);
+                    break;
+                }
+            case 2:
+                {
+                    m_currboard->advance_cursor(2);
+                    m_currboard->get_cell().mask_bits |= 1;
+                    break;
+                }
+            default:
+                {
+                    throw std::runtime_error(str_fflprintf(": Invalid utf8 column width: %d", column_width));
+                }
+
         }
         done_length += code_length;
     }
