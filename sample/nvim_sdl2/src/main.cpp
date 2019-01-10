@@ -15,45 +15,93 @@
  *
  * =====================================================================================
  */
-#include <cstdio>
 #include <cstdint>
 #include <cstddef>
 #include <cinttypes>
 #include <stdexcept>
 #include "libnvc.hpp"
-#include "nvimprocess.hpp"
+#include "nvimproc.hpp"
+#include "sdldevice.hpp"
+
+bool process_event(libnvc::nvim_client *pclient)
+{
+    SDL_Event event;
+    while(SDL_PollEvent(&event)){
+        switch(event.type){
+            case SDL_WINDOWEVENT:
+                {
+                    if(event.window.event == SDL_WINDOWEVENT_CLOSE){
+                        return true;
+                    }
+                    break;
+                }
+            case SDL_KEYDOWN:
+                {
+                    switch(event.key.keysym.sym){
+                        case SDLK_ESCAPE:
+                            {
+                                pclient->nvim_input("<ESC>");
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
+                    }
+                    break;
+                }
+            case SDL_TEXTINPUT:
+                {
+                    pclient->nvim_input(event.text.text);
+                    break;
+                }
+            default:
+                {
+                    break;
+                }
+        }
+    }
+    return false;
+}
+
+class nvim_sdlwidget: public libnvc::nvim_widget
+{
+    private:
+        nvim_proc  *m_proc;
+        sdl_device *m_device;
+
+    public:
+        nvim_sdlwidget(nvim_proc *piodev, sdl_device *pgfxdev)
+            : m_proc(piodev)
+            , m_device(pgfxdev)
+        {}
+
+    public:
+        void draw_char(const char *cstr, size_t cell_x, size_t cell_y, uint32_t color_fg, uint32_t color_bg, uint32_t, bool, bool, bool, bool)
+        {
+            m_device->draw_char(cstr, cell_x, cell_y, color_fg, color_bg);
+        }
+}
 
 int main()
 {
-    nvim_process nvim_proc;
-    libnvc::nvim_client client(&nvim_proc, 100, 40);
+    const size_t w = 100;
+    const size_t h =  40;
+
+    sdl_device gfxdev(w, h, 10);
+
+    nvim_proc proc;
+    libnvc::nvim_client client(&proc, w, h);
+
+    nvim_sdlwidget widget(&proc, &gfxdev);
 
     // attach the ui
     // this function responds slow
     client.nvim_ui_attach(client.width(), client.height(), {{"rgb", true}, {"ext_linegrid", true}});
 
-    client.forward<libnvc::reqid("nvim_input")>({"$i123<CR>123<ESC>"}, [](int64_t len_done)
-    {
-        char buf[128];
-        std::sprintf(buf, "nvim_input returns: %" PRIi64, len_done);
-        libnvc::log(libnvc::LOG_INFO, buf);
-    });
-
-    client.forward<libnvc::reqid("nvim_buf_set_name")>({1, "1234"}, []()
-    {
-        libnvc::log(libnvc::LOG_INFO, "nvim_buf_set_name done");
-    }, [](int64_t ec, std::string emsg)
-    {
-        std::printf("nvim reports error: [%d, %s]", (int)(ec), emsg.c_str());
-    });
-
-    client.forward<libnvc::reqid("nvim_command")>({":echomsg \"hello world\""}, []()
-    {
-        libnvc::log(libnvc::LOG_INFO, "nvim_command done");
-    });
-
-    while(true){
-        client.poll();
+    while(process_event(&client)){
+        widget.draw();
+        SDL_Delay(10);
     }
     return 0;
 }

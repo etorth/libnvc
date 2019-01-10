@@ -118,7 +118,8 @@ void libnvc::nvim_client::on_flush()
             if(const char *chr = m_backboard->get_cell(x, y).len4_cstr()){
                 line += chr;
             }else{
-                line += " ";
+                // found an invalid cell
+                // warning, could be a bug of nvim
             }
         }
         libnvc::log(LOG_INFO, line.c_str());

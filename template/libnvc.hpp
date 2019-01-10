@@ -814,6 +814,13 @@ namespace libnvc
                 }
             }
 
+            void clear_char()
+            {
+                for(auto &cell: m_cells){
+                    cell.set(' ', 0);
+                }
+            }
+
         public:
             size_t cursor_x() const
             {
@@ -963,7 +970,7 @@ namespace libnvc
         public:
             void on_grid_clear(int64_t)
             {
-                m_currboard->clear();
+                m_currboard->clear_char();
             }
 
             void on_grid_cursor_goto(int64_t, int64_t, int64_t);
@@ -1004,14 +1011,16 @@ namespace libnvc
             void draw();
 
         public:
-            virtual size_t draw_text(
+            virtual void draw_char(
+                    const char *,       // len4_cstr()
                     size_t,             // x in grid
                     size_t,             // y in grid
                     uint32_t,           // foreground 24bits color
                     uint32_t,           // background 24bits color
                     uint32_t,           // background 24bits color
+                    bool,               // italic
+                    bool,               // bold
                     bool,               // underline
-                    bool,               // undercurl
-                    const char *) = 0;  // string
+                    bool);              // undercurl
     };
 }

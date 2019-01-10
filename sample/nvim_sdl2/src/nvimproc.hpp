@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename: nvimprocess.hpp
+ *       Filename: nvimproc.hpp
  *        Created: 01/06/2019 04:35:01
  *    Description: 
  *
@@ -20,7 +20,7 @@
 #include <reproc++/sink.hpp>
 #include <reproc++/reproc.hpp>
 
-class nvim_process: public libnvc::io_device
+class nvim_proc: public libnvc::io_device
 {
     private:
         reproc::process m_reproc;
@@ -29,7 +29,7 @@ class nvim_process: public libnvc::io_device
         std::string m_output;
 
     public:
-        nvim_process()
+        nvim_proc()
             : m_reproc(reproc::wait, reproc::infinite)
             , m_output()
         {
