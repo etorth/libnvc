@@ -765,13 +765,19 @@ namespace libnvc
         public:
             int hl_id() const
             {
-                return m_hlid;
+                if(valid()){
+                    return m_hlid;
+                }
+                return 0;
             }
 
         public:
             const char *len4_cstr() const
             {
-                return (const char *)(&m_utf8code);
+                if(valid()){
+                    return (const char *)(&m_utf8code);
+                }
+                return nullptr;
             }
     };
 

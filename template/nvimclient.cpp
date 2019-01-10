@@ -111,10 +111,15 @@ libnvc::nvim_client::nvim_client(libnvc::io_device *pdevice, size_t width, size_
 
 void libnvc::nvim_client::on_flush()
 {
+    m_backboard = m_currboard->clone();
     for(size_t y = 0; y < height(); ++y){
         std::string line;
         for(size_t x = 0; x < width(); ++x){
-            line += m_currboard->get_cell(x, y).len4_cstr();
+            if(const char *chr = m_backboard->get_cell(x, y).len4_cstr()){
+                line += chr;
+            }else{
+                line += " ";
+            }
         }
         libnvc::log(LOG_INFO, line.c_str());
     }
