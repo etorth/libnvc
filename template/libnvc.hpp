@@ -716,35 +716,63 @@ namespace libnvc
 
 namespace libnvc
 {
-    struct CELL
+    // make it as a class
+    // can't initialize by std::memset(0) since 0x00000000 is valid utf8 coding
+    class CELL final
     {
-        uint32_t color_fg;
-        uint32_t color_bg;
-        uint32_t color_sp;
+        private:
+            // is to define a invalid CELL use this
+            // for any other we assume the input is a valid utf8code
+            // 
+            // user shoun't know this value
+            // use clear() to clear one existing cell
+            constexpr static uint32_t INVALID_UTF8 = 0XFFFFFFFF;
 
-        uint32_t utf8_code;
-        uint32_t mask_bits;
+        private:
+            uint32_t m_utf8code;
 
-        CELL()
-        {
-            clear();
-        }
+        private:
+            uint32_t m_hlid    : 30;
+            uint32_t m_wcwidth :  2;
 
-        CELL(uint32_t bg)
-        {
-            clear();
-            color_bg = bg;
-        }
+        public:
+            CELL(uint32_t, int);
 
-        void clear()
-        {
-            std::memset(this, 0, sizeof(CELL));
-        }
+        public:
+            CELL(): CELL(INVALID_UTF8, 0) {}
+            CELL(uint32_t utf8code): CELL(utf8code, 0) {}
 
-        bool double_width() const
-        {
-            return mask_bits;
-        }
+        public:
+            void clear()
+            {
+                m_utf8code = INVALID_UTF8;
+            }
+
+            void set(uint32_t, int);
+
+        public:
+            bool valid() const
+            {
+                return m_utf8code != INVALID_UTF8;
+            }
+
+        public:
+            size_t wc_width() const
+            {
+                return m_wcwidth;
+            }
+
+        public:
+            int hl_id() const
+            {
+                return m_hlid;
+            }
+
+        public:
+            const char *len4_cstr() const
+            {
+                return (const char *)(&m_utf8code);
+            }
     };
 
     class board
@@ -859,7 +887,7 @@ namespace libnvc
 
     class nvim_client: public api_client
     {
-        private:
+        public:
             struct hl_attrdef
             {
                 uint32_t color_fg : 24;
@@ -918,10 +946,6 @@ namespace libnvc
             }
 
         public:
-            void on_put(const std::string &);
-            void on_cursor_goto(int64_t, int64_t);
-
-        public:
             void on_option_set(const std::string &option, libnvc::object obj)
             {
                 m_options[option] = obj;
@@ -946,11 +970,42 @@ namespace libnvc
 
         private:
             size_t set_cell(size_t, size_t, const std::string &, int64_t, int);
+
+        public:
+            const hl_attrdef &get_hl_attrdef(int hl_id) const
+            {
+                return m_hldefs.at(hl_id);
+            }
+
+        public:
+            const CELL &get_backcell(size_t x, size_t y) const
+            {
+                return m_backboard->get_cell(x, y);
+            }
     };
 
     class nvim_widget
     {
         private:
             libnvc::nvim_client *m_client;
+
+        public:
+            nvim_widget(libnvc::nvim_client *pclient)
+                : m_client(pclient)
+            {}
+
+        public:
+            void draw();
+
+        public:
+            virtual size_t draw_text(
+                    size_t,             // x in grid
+                    size_t,             // y in grid
+                    uint32_t,           // foreground 24bits color
+                    uint32_t,           // background 24bits color
+                    uint32_t,           // background 24bits color
+                    bool,               // underline
+                    bool,               // undercurl
+                    const char *) = 0;  // string
     };
 }

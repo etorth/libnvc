@@ -17,6 +17,7 @@
  */
 
 #include <utf8.h>
+#include <cinttypes>
 #include "libnvc.hpp"
 #include "strfunc.hpp"
 
@@ -72,6 +73,34 @@ static size_t peek_utf8_code(const char *str, size_t length, uint32_t *pcode)
     return advanced;
 }
 
+libnvc::CELL::CELL(uint32_t utf8, int hl_id)
+{
+    clear();
+    if(utf8 != INVALID_UTF8){
+        set(utf8, hl_id);
+    }
+}
+
+void libnvc::CELL::set(uint32_t utf8, int hl_id)
+{
+    m_utf8code = utf8;
+    m_hlid     = hl_id;
+
+    switch(auto col_width = measure_utf8_column_width(m_utf8code)){
+        case 0:
+        case 1:
+        case 2:
+            {
+                m_wcwidth = col_width;
+                return;
+            }
+        default:
+            {
+                throw std::invalid_argument(str_fflprintf(": Invalid utf8 code: %" PRIu32, m_utf8code));
+            }
+    }
+}
+
 libnvc::nvim_client::nvim_client(libnvc::io_device *pdevice, size_t width, size_t height)
     : libnvc::api_client(pdevice)
     , m_hldefs()
@@ -85,50 +114,10 @@ void libnvc::nvim_client::on_flush()
     for(size_t y = 0; y < height(); ++y){
         std::string line;
         for(size_t x = 0; x < width(); ++x){
-            line += (const char *)(&(m_currboard->get_cell(x, y).utf8_code));
+            line += m_currboard->get_cell(x, y).len4_cstr();
         }
         libnvc::log(LOG_INFO, line.c_str());
     }
-}
-
-void libnvc::nvim_client::on_put(const std::string &str)
-{
-    size_t done_length = 0;
-    while(done_length < str.length()){
-        uint32_t utf8_code = 0;
-        auto code_length = peek_utf8_code(str.data() + done_length, str.length(), &utf8_code);
-
-        m_currboard->get_cell().clear();
-        m_currboard->get_cell().utf8_code = utf8_code;
-        switch(auto column_width = measure_utf8_column_width(utf8_code)){
-            case 1:
-                {
-                    m_currboard->advance_cursor(1);
-                    break;
-                }
-            case 2:
-                {
-                    m_currboard->advance_cursor(2);
-                    m_currboard->get_cell().mask_bits |= 1;
-                    break;
-                }
-            default:
-                {
-                    throw std::runtime_error(str_fflprintf(": Invalid utf8 column width: %d", column_width));
-                }
-
-        }
-        done_length += code_length;
-    }
-
-    if(done_length != str.length()){
-        throw std::runtime_error(str_fflprintf(": Parse utf8 string failed: \"%s\"", str.c_str()));
-    }
-}
-
-void libnvc::nvim_client::on_cursor_goto(int64_t row, int64_t col)
-{
-    m_currboard->set_cursor(col, row);
 }
 
 void libnvc::nvim_client::on_grid_cursor_goto(int64_t, int64_t row, int64_t col)
@@ -136,32 +125,31 @@ void libnvc::nvim_client::on_grid_cursor_goto(int64_t, int64_t row, int64_t col)
     m_currboard->set_cursor(col, row);
 }
 
-size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str, int64_t, int repeat)
+size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str, int64_t hl_id, int repeat)
 {
     uint32_t utf8_code = 0;
     peek_utf8_code(str.data(), str.length(), &utf8_code);
 
-    switch(auto column_width = measure_utf8_column_width(utf8_code)){
+    m_currboard->get_cell(x, y).set(utf8_code, hl_id);
+    switch(auto column_width = m_currboard->get_cell(x, y).wc_width()){
+        case 1:
+            {
+                for(int64_t pos = 0; pos < repeat; ++pos){
+                    m_currboard->get_cell(x + pos, y).set(utf8_code, hl_id);
+                }
+                return repeat;
+            }
         case 2:
             {
                 if(repeat != 1){
                     throw std::runtime_error(str_fflprintf(": Protocol error: wide utf8 char get column width: %d", column_width));
                 }
-
-                m_currboard->get_cell(x, y).clear();
-                m_currboard->get_cell(x, y).utf8_code  = utf8_code;
-                m_currboard->get_cell(x, y).mask_bits |= 1;
-
                 m_currboard->get_cell(x + 1, y).clear();
                 return 2;
             }
-        case 1:
+        case 0:
             {
-                for(int64_t pos = 0; pos < repeat; ++pos){
-                    m_currboard->get_cell(x + pos, y).clear();
-                    m_currboard->get_cell(x + pos, y).utf8_code = utf8_code;
-                }
-                return repeat;
+                return 2;
             }
         default:
             {
