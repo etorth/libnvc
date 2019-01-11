@@ -25,8 +25,14 @@
 
 int main()
 {
-    nvim_process nvim_proc;
-    libnvc::nvim_client client(&nvim_proc, 100, 40);
+    // start nvim quickly:
+    // $ nvim --listen "127.0.0.1:6666"
+    libnvc::asio_socket socket;
+    if(!socket.connect("localhost", 6666)){
+        throw std::runtime_error("failed to connect to localhost:6666");
+    }
+
+    libnvc::nvim_client client(&socket, 100, 40);
 
     // attach the ui
     // this function responds slow
