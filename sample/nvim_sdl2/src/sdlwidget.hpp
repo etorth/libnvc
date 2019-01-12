@@ -51,4 +51,10 @@ class nvim_sdlwidget: public libnvc::nvim_widget
         {
             m_client->nvim_input(keystr);
         }
+
+    public:
+        void update()
+        {
+            m_client->poll();
+        }
 };

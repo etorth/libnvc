@@ -89,7 +89,10 @@ int main()
     while(!process_event(&widget)){
         SDL_SetRenderDrawColor(sdl_dev.m_renderer, 0, 0, 0, 255);
         SDL_RenderClear(sdl_dev.m_renderer);
+
+        widget.update();
         widget.draw_ex(0, 0, 0, 0, window_width, window_height);
+
         SDL_RenderPresent(sdl_dev.m_renderer);
         SDL_Delay(10);
     }
