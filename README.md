@@ -3,6 +3,8 @@
 another cpp nvim msgpack-rpc client.  
 nvim's rpc interface is convenient but not something you can finish in 10 minutes.
 
+![image](https://github.com/etorth/libnvc/raw/master/readme/nvim.png)
+
 ```cpp
 #include "libnvc.hpp"
 
