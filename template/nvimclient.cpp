@@ -118,7 +118,8 @@ void libnvc::nvim_client::on_flush()
             if(const char *chr = m_backboard->get_cell(x, y).len4_cstr()){
                 line += chr;
             }else{
-                line += " ";
+                // found an invalid cell
+                // warning, could be a bug of nvim
             }
         }
         libnvc::log(LOG_INFO, line.c_str());
@@ -248,6 +249,8 @@ void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::stri
         }
     }
 
-    m_hldefs.resize(id + 1);
+    if((size_t)(id) >= m_hldefs.size()){
+        m_hldefs.resize(id + 1);
+    }
     m_hldefs[id] = this_attrdef;
 }

@@ -714,6 +714,14 @@ namespace libnvc
     std::string print_object(const libnvc::object &);
 }
 
+struct libnvc_rect
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
 namespace libnvc
 {
     // make it as a class
@@ -794,7 +802,7 @@ namespace libnvc
             size_t m_cursor_x;
             size_t m_cursor_y;
 
-        private:
+        protected:
             std::vector<libnvc::CELL> m_cells;
 
         public:
@@ -811,6 +819,13 @@ namespace libnvc
             {
                 for(auto &cell: m_cells){
                     cell.clear();
+                }
+            }
+
+            void clear_char()
+            {
+                for(auto &cell: m_cells){
+                    cell.set(' ', 0);
                 }
             }
 
@@ -961,9 +976,44 @@ namespace libnvc
             void on_flush();
 
         public:
+            void on_default_colors_set(int64_t rgb_fg, int64_t rgb_bg, int64_t rgb_sp, int64_t, int64_t)
+            {
+                hl_attrdef hldef;
+
+                // currently nvim always gives fg, bg, sp as -1
+                // -1 means no color set yet, nvim hasn't implement its way to choose a proper default color
+
+                if(rgb_fg == -1){
+                    rgb_fg = 0x00000000;
+                }
+
+                if(rgb_bg == -1){
+                    rgb_bg = 0x00ffffff;
+                }
+
+                if(rgb_sp == -1){
+                    rgb_sp = 0x00ff0000;
+                }
+
+                hldef.color_fg = (rgb_fg & 0x00ffffff);
+                hldef.color_bg = (rgb_bg & 0x00ffffff);
+                hldef.color_sp = (rgb_sp & 0x00ffffff);
+
+                hldef.color_fg_defined = 1;
+                hldef.color_bg_defined = 1;
+                hldef.color_sp_defined = 1;
+
+                if(m_hldefs.empty()){
+                    m_hldefs.push_back(hldef);
+                }else{
+                    m_hldefs[0] = hldef;
+                }
+            }
+
+        public:
             void on_grid_clear(int64_t)
             {
-                m_currboard->clear();
+                m_currboard->clear_char();
             }
 
             void on_grid_cursor_goto(int64_t, int64_t, int64_t);
@@ -992,26 +1042,63 @@ namespace libnvc
 
     class nvim_widget
     {
+        protected:
+            std::unique_ptr<libnvc::nvim_client> m_client;
+
         private:
-            libnvc::nvim_client *m_client;
+            size_t m_cell_width;
+            size_t m_cell_height;
 
         public:
-            nvim_widget(libnvc::nvim_client *pclient)
-                : m_client(pclient)
-            {}
+            nvim_widget(
+                    libnvc::io_device *,    //
+                    size_t,                 // how many cells in a row
+                    size_t,                 // how many cells in a column
+                    size_t,                 // width  in pixel of one cell
+                    size_t);                // height in pixel of one cell
 
         public:
-            void draw();
+            size_t width() const
+            {
+                return m_client->width();
+            }
+
+            size_t height() const
+            {
+                return m_client->height();
+            }
 
         public:
-            virtual size_t draw_text(
-                    size_t,             // x in grid
-                    size_t,             // y in grid
-                    uint32_t,           // foreground 24bits color
-                    uint32_t,           // background 24bits color
-                    uint32_t,           // background 24bits color
-                    bool,               // underline
-                    bool,               // undercurl
-                    const char *) = 0;  // string
+            size_t cell_width() const
+            {
+                return m_cell_width;
+            }
+
+            size_t cell_height() const
+            {
+                return m_cell_height;
+            }
+
+        public:
+            void draw_ex(
+                    int,    // dst_x
+                    int,    // dst_y
+                    int,    // src_x
+                    int,    // src_y
+                    int,    // src_w
+                    int);   // src_h
+
+        public:
+            virtual void draw_char(
+                    const struct libnvc_rect *, // box_draw
+                    const struct libnvc_rect *, // box_show
+                    const char *,               // len4_cstr
+                    uint32_t,                   // foreground 24bits color
+                    uint32_t,                   // background 24bits color
+                    uint32_t,                   // special    24bits color
+                    bool,                       // italic
+                    bool,                       // bold
+                    bool,                       // underline
+                    bool) = 0;                  // undercurl
     };
 }

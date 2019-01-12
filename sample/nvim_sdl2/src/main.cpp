@@ -15,51 +15,83 @@
  *
  * =====================================================================================
  */
-#include <cstdio>
 #include <cstdint>
 #include <cstddef>
 #include <cinttypes>
 #include <stdexcept>
 #include "libnvc.hpp"
-#include "nvimprocess.hpp"
+#include "sdldevice.hpp"
+#include "sdlwidget.hpp"
+
+bool process_event(nvim_sdlwidget *pwidget)
+{
+    SDL_Event event;
+    while(SDL_PollEvent(&event)){
+        switch(event.type){
+            case SDL_WINDOWEVENT:
+                {
+                    if(event.window.event == SDL_WINDOWEVENT_CLOSE){
+                        return true;
+                    }
+                    break;
+                }
+            case SDL_KEYDOWN:
+                {
+                    switch(event.key.keysym.sym){
+                        case SDLK_RETURN:
+                            {
+                                pwidget->input_keystr("<CR>");
+                                break;
+                            }
+                        case SDLK_ESCAPE:
+                            {
+                                pwidget->input_keystr("<ESC>");
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
+                    }
+                    break;
+                }
+            case SDL_TEXTINPUT:
+                {
+                    pwidget->input_keystr(event.text.text);
+                    break;
+                }
+            default:
+                {
+                    break;
+                }
+        }
+    }
+    return false;
+}
 
 int main()
 {
     // start nvim quickly:
-    // $ nvim --listen "127.0.0.1:6666"
+    // $ nvim --headless --listen "127.0.0.1:6666"
     libnvc::asio_socket socket;
     if(!socket.connect("localhost", 6666)){
-        throw std::runtime_error("failed to connect to localhost:6666");
+        throw std::runtime_error("Failed to connect to localhost:6666");
     }
 
-    libnvc::nvim_client client(&socket, 100, 40);
+    const size_t window_width  = 800;
+    const size_t window_height = 600;
+    const size_t widget_width  = 800;
+    const size_t widget_height = 600;
 
-    // attach the ui
-    // this function responds slow
-    client.nvim_ui_attach(client.width(), client.height(), {{"rgb", true}, {"ext_linegrid", true}});
+    sdl_device sdl_dev(window_width, window_height, "./font.ttf", 15);
+    nvim_sdlwidget widget(&socket, &sdl_dev, widget_width, widget_height);
 
-    client.forward<libnvc::reqid("nvim_input")>({"$i123<CR>123<ESC>"}, [](int64_t len_done)
-    {
-        char buf[128];
-        std::sprintf(buf, "nvim_input returns: %" PRIi64, len_done);
-        libnvc::log(libnvc::LOG_INFO, buf);
-    });
-
-    client.forward<libnvc::reqid("nvim_buf_set_name")>({1, "1234"}, []()
-    {
-        libnvc::log(libnvc::LOG_INFO, "nvim_buf_set_name done");
-    }, [](int64_t ec, std::string emsg)
-    {
-        std::printf("nvim reports error: [%d, %s]", (int)(ec), emsg.c_str());
-    });
-
-    client.forward<libnvc::reqid("nvim_command")>({":echomsg \"hello world\""}, []()
-    {
-        libnvc::log(libnvc::LOG_INFO, "nvim_command done");
-    });
-
-    while(true){
-        client.poll();
+    while(!process_event(&widget)){
+        SDL_SetRenderDrawColor(sdl_dev.m_renderer, 0, 0, 0, 255);
+        SDL_RenderClear(sdl_dev.m_renderer);
+        widget.draw_ex(0, 0, 0, 0, window_width, window_height);
+        SDL_RenderPresent(sdl_dev.m_renderer);
+        SDL_Delay(10);
     }
     return 0;
 }
