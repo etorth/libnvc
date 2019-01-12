@@ -39,6 +39,13 @@ nvim_sdlwidget::nvim_sdlwidget(libnvc::io_device *io_dev, sdl_device *sdl_dev, s
     m_client->nvim_ui_attach(width(), height(), {{"rgb", true}, {"ext_linegrid", true}});
 }
 
+void nvim_sdlwidget::draw_ex(int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h)
+{
+    int xoff = dst_x + (m_pixel_width - width() * m_sdldev->font_width()) / 2;
+    int yoff = dst_y + (m_pixel_height - height() * m_sdldev->font_height()) / 2;
+    libnvc::nvim_widget::draw_ex(dst_x + xoff, dst_y + yoff, src_x, src_y, src_w, src_h);
+}
+
 void nvim_sdlwidget::draw_char(const struct libnvc_rect *rect_full, const struct libnvc_rect *rect_show, const char *cstr, uint32_t color_fg, uint32_t color_bg, uint32_t, bool, bool, bool, bool)
 {
     if(rect_full == nullptr){

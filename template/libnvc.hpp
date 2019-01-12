@@ -1080,7 +1080,7 @@ namespace libnvc
             }
 
         public:
-            void draw_ex(
+            virtual void draw_ex(
                     int,    // dst_x
                     int,    // dst_y
                     int,    // src_x

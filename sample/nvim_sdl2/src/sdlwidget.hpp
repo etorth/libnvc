@@ -47,6 +47,9 @@ class nvim_sdlwidget: public libnvc::nvim_widget
         virtual void draw_char(const struct libnvc_rect *, const struct libnvc_rect *, const char *, uint32_t, uint32_t, uint32_t, bool, bool, bool, bool);
 
     public:
+        virtual void draw_ex(int, int, int, int, int, int);
+
+    public:
         void input_keystr(const char *keystr)
         {
             m_client->nvim_input(keystr);
