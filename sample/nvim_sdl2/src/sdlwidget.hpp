@@ -26,9 +26,6 @@ class nvim_sdlwidget: public libnvc::nvim_widget
         sdl_device *m_sdldev;
 
     private:
-        std::unique_ptr<libnvc::nvim_client> m_client;
-
-    private:
         size_t m_pixel_width;
         size_t m_pixel_height;
 

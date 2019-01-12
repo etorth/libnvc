@@ -38,6 +38,11 @@ bool process_event(nvim_sdlwidget *pwidget)
             case SDL_KEYDOWN:
                 {
                     switch(event.key.keysym.sym){
+                        case SDLK_RETURN:
+                            {
+                                pwidget->input_keystr("<CR>");
+                                break;
+                            }
                         case SDLK_ESCAPE:
                             {
                                 pwidget->input_keystr("<ESC>");
@@ -78,10 +83,10 @@ int main()
     const size_t widget_width  = 800;
     const size_t widget_height = 600;
 
-    sdl_device sdl_dev(window_width, window_height, "./font.ttf", 10);
+    sdl_device sdl_dev(window_width, window_height, "./font.ttf", 15);
     nvim_sdlwidget widget(&socket, &sdl_dev, widget_width, widget_height);
 
-    while(process_event(&widget)){
+    while(!process_event(&widget)){
         SDL_SetRenderDrawColor(sdl_dev.m_renderer, 0, 0, 0, 255);
         SDL_RenderClear(sdl_dev.m_renderer);
         widget.draw_ex(0, 0, 0, 0, window_width, window_height);

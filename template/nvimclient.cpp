@@ -249,6 +249,8 @@ void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::stri
         }
     }
 
-    m_hldefs.resize(id + 1);
+    if((size_t)(id) >= m_hldefs.size()){
+        m_hldefs.resize(id + 1);
+    }
     m_hldefs[id] = this_attrdef;
 }

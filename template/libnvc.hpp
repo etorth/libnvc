@@ -802,7 +802,7 @@ namespace libnvc
             size_t m_cursor_x;
             size_t m_cursor_y;
 
-        private:
+        protected:
             std::vector<libnvc::CELL> m_cells;
 
         public:
@@ -976,6 +976,41 @@ namespace libnvc
             void on_flush();
 
         public:
+            void on_default_colors_set(int64_t rgb_fg, int64_t rgb_bg, int64_t rgb_sp, int64_t, int64_t)
+            {
+                hl_attrdef hldef;
+
+                // currently nvim always gives fg, bg, sp as -1
+                // -1 means no color set yet, nvim hasn't implement its way to choose a proper default color
+
+                if(rgb_fg == -1){
+                    rgb_fg = 0x00000000;
+                }
+
+                if(rgb_bg == -1){
+                    rgb_bg = 0x00ffffff;
+                }
+
+                if(rgb_sp == -1){
+                    rgb_sp = 0x00ff0000;
+                }
+
+                hldef.color_fg = (rgb_fg & 0x00ffffff);
+                hldef.color_bg = (rgb_bg & 0x00ffffff);
+                hldef.color_sp = (rgb_sp & 0x00ffffff);
+
+                hldef.color_fg_defined = 1;
+                hldef.color_bg_defined = 1;
+                hldef.color_sp_defined = 1;
+
+                if(m_hldefs.empty()){
+                    m_hldefs.push_back(hldef);
+                }else{
+                    m_hldefs[0] = hldef;
+                }
+            }
+
+        public:
             void on_grid_clear(int64_t)
             {
                 m_currboard->clear_char();
@@ -1007,7 +1042,7 @@ namespace libnvc
 
     class nvim_widget
     {
-        private:
+        protected:
             std::unique_ptr<libnvc::nvim_client> m_client;
 
         private:

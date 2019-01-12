@@ -95,7 +95,7 @@ SDL_Texture *sdl_device::load_font_image(const char *cstr, uint32_t u32argb, boo
 {
     auto fn_set_image_color = [](SDL_Texture *ptex, uint32_t u32argb) -> SDL_Texture *
     {
-        uint8_t a = (u32argb & 0X00FF0000) >> 24;
+        uint8_t a = (u32argb & 0XFF000000) >> 24;
         uint8_t r = (u32argb & 0X00FF0000) >> 16;
         uint8_t g = (u32argb & 0X0000FF00) >>  8;
         uint8_t b = (u32argb & 0X000000FF) >>  0;
