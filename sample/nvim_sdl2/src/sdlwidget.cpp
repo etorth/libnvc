@@ -84,14 +84,15 @@ void nvim_sdlwidget::draw_char(const struct libnvc_rect *rect_full, const struct
     uint8_t g = (color_bg & 0x0000ff00) >>  8;
     uint8_t b = (color_bg & 0x000000ff) >>  0;
 
-    SDL_SetRenderDrawColor(m_sdldev->m_renderer, r, g, b, 255);
+    SDL_SetRenderDrawBlendMode(m_sdldev->m_renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(m_sdldev->m_renderer, r, g, b, 128);
     SDL_RenderFillRect(m_sdldev->m_renderer, &bg_dst);
 
     if(std::strcmp(cstr, " ") == 0){
         return;
     }
 
-    auto ptex = m_sdldev->load_font_image(cstr, 0xff000000 | color_fg, false, false);
+    auto ptex = m_sdldev->load_font_image(cstr, 0xf0000000 | color_fg, false, false);
     if(ptex == nullptr){
         return;
     }
