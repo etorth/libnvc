@@ -714,6 +714,14 @@ namespace libnvc
     std::string print_object(const libnvc::object &);
 }
 
+struct libnvc_rect
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
 namespace libnvc
 {
     // make it as a class
@@ -1000,27 +1008,62 @@ namespace libnvc
     class nvim_widget
     {
         private:
-            libnvc::nvim_client *m_client;
+            std::unique_ptr<libnvc::nvim_client> m_client;
+
+        private:
+            size_t m_cell_width;
+            size_t m_cell_height;
 
         public:
-            nvim_widget(libnvc::nvim_client *pclient)
-                : m_client(pclient)
-            {}
+            nvim_widget(
+                    libnvc::io_device *,    //
+                    size_t,                 // how many cells in a row
+                    size_t,                 // how many cells in a column
+                    size_t,                 // width  in pixel of one cell
+                    size_t);                // height in pixel of one cell
 
         public:
-            void draw();
+            size_t width() const
+            {
+                return m_client->width();
+            }
+
+            size_t height() const
+            {
+                return m_client->height();
+            }
+
+        public:
+            size_t cell_width() const
+            {
+                return m_cell_width;
+            }
+
+            size_t cell_height() const
+            {
+                return m_cell_height;
+            }
+
+        public:
+            void draw_ex(
+                    int,    // dst_x
+                    int,    // dst_y
+                    int,    // src_x
+                    int,    // src_y
+                    int,    // src_w
+                    int);   // src_h
 
         public:
             virtual void draw_char(
-                    const char *,       // len4_cstr()
-                    size_t,             // x in grid
-                    size_t,             // y in grid
-                    uint32_t,           // foreground 24bits color
-                    uint32_t,           // background 24bits color
-                    uint32_t,           // background 24bits color
-                    bool,               // italic
-                    bool,               // bold
-                    bool,               // underline
-                    bool);              // undercurl
+                    const struct libnvc_rect *, // box_draw
+                    const struct libnvc_rect *, // box_show
+                    const char *,               // len4_cstr
+                    uint32_t,                   // foreground 24bits color
+                    uint32_t,                   // background 24bits color
+                    uint32_t,                   // special    24bits color
+                    bool,                       // italic
+                    bool,                       // bold
+                    bool,                       // underline
+                    bool) = 0;                  // undercurl
     };
 }
