@@ -141,6 +141,10 @@ void libnvc::nvim_widget::draw_ex(int dst_x, int dst_y, int src_x, int src_y, in
                 std::swap(color_fg, color_bg);
             }
             draw_char(&curr_dst, rect_show_ptr, curr_cell.len4_cstr(), color_fg, color_bg, color_sp, hl_def->italic, hl_def->bold, hl_def->underline, hl_def->undercurl);
+
+            if((size_t)(x) == m_client->cursor_x() && (size_t)(y) == m_client->cursor_y()){
+                draw_char(&curr_dst, rect_show_ptr, " ", 0, 0x0000ff00, 0, false, false, false, false);
+            }
         }
     }
 }

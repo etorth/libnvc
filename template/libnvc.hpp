@@ -956,6 +956,17 @@ namespace libnvc
             }
 
         public:
+            size_t cursor_x() const
+            {
+                return m_backboard->cursor_x();
+            }
+
+            size_t cursor_y() const
+            {
+                return m_backboard->cursor_y();
+            }
+
+        public:
             size_t width() const
             {
                 return m_currboard->width();
