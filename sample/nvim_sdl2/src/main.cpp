@@ -38,6 +38,11 @@ bool process_event(nvim_sdlwidget *pwidget)
             case SDL_KEYDOWN:
                 {
                     switch(event.key.keysym.sym){
+                        case SDLK_BACKSPACE:
+                            {
+                                pwidget->input_keystr("<BS>");
+                                break;
+                            }
                         case SDLK_RETURN:
                             {
                                 pwidget->input_keystr("<CR>");
