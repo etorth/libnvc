@@ -85,8 +85,8 @@ int main()
 
     const size_t window_width  = 800;
     const size_t window_height = 600;
-    const size_t widget_width  = 400;
-    const size_t widget_height = 300;
+    const size_t widget_width  = 600;
+    const size_t widget_height = 400;
 
     sdl_device sdl_dev(window_width, window_height, "./font.ttf", 15);
     nvim_sdlwidget widget(&socket, &sdl_dev, widget_width, widget_height);

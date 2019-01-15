@@ -126,6 +126,35 @@ void libnvc::nvim_client::on_flush()
     }
 }
 
+void libnvc::nvim_client::on_grid_scroll(int64_t, int64_t top, int64_t bot, int64_t left, int64_t right, int64_t rows, int64_t cols)
+{
+    // won't use the cols, cols is always zero...
+    // when scroll left/right, nvim just resend the whole screen
+
+    // the (top, bot, left, rigth) is the region get updated
+    // some line in the region will get out of print, it's not a ``unchanged region" to just move up and down...
+
+    if(cols != 0){
+        throw std::runtime_error(str_fflprintf(": on_grid_scroll(..., cols = %" PRIu64 ")", cols));
+    }
+
+    if(rows > 0){
+        // from row: curr_row
+        //   to row: curr_row + rows
+        for(int64_t curr_row = top; curr_row + rows < bot; ++curr_row){
+            for(int64_t curr_col = left; curr_col < right; ++curr_col){
+                m_currboard->get_cell(curr_col, curr_row) = m_currboard->get_cell(curr_col, curr_row + rows);
+            }
+        }
+    }else{
+        for(int64_t curr_row = bot - 1; curr_row + rows >= top; --curr_row){
+            for(int64_t curr_col = left; curr_col < right; ++curr_col){
+                m_currboard->get_cell(curr_col, curr_row) = m_currboard->get_cell(curr_col, curr_row + rows);
+            }
+        }
+    }
+}
+
 void libnvc::nvim_client::on_grid_cursor_goto(int64_t, int64_t row, int64_t col)
 {
     m_currboard->set_cursor(col, row);

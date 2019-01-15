@@ -1022,6 +1022,8 @@ namespace libnvc
             }
 
         public:
+            void on_grid_scroll(int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t);
+
             void on_grid_clear(int64_t)
             {
                 m_currboard->clear_char();
