@@ -104,6 +104,9 @@ void libnvc::CELL::set(uint32_t utf8, int hl_id)
 libnvc::nvim_client::nvim_client(libnvc::io_device *pdevice, size_t width, size_t height)
     : libnvc::api_client(pdevice)
     , m_hldefs()
+    , m_mode(-1)
+    , m_cursor_style_enabled(false)
+    , m_modedefs()
     , m_options()
     , m_currboard(std::make_unique<libnvc::board>(width, height))
     , m_backboard()
@@ -282,4 +285,39 @@ void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::stri
         m_hldefs.resize(id + 1);
     }
     m_hldefs[id] = this_attrdef;
+}
+
+void libnvc::nvim_client::on_mode_info_set(bool enabled, const std::vector<libnvc::object> &cursor_styles)
+{
+    m_cursor_style_enabled = enabled;
+    m_modedefs.resize(cursor_styles.size());
+
+    for(size_t index = 0; index < cursor_styles.size(); ++index){
+        for(auto &p: std::get<std::map<std::string, libnvc::object_wrapper>>(cursor_styles[index])){
+            if(p.first == "attr_id"){
+                m_modedefs[index].attr_id = std::get<int64_t>(p.second.ref());
+                continue;
+            }
+
+            if(p.first == "cell_percentage"){
+                m_modedefs[index].cell_percentage = std::get<int64_t>(p.second.ref());
+                continue;
+            }
+
+            if(p.first == "name"){
+                m_modedefs[index].name = std::get<std::string>(p.second.ref());
+                continue;
+            }
+
+            if(p.first == "short_name"){
+                m_modedefs[index].short_name = std::get<std::string>(p.second.ref());
+                continue;
+            }
+
+            if(p.first == "cursor_shape"){
+                m_modedefs[index].cursor_shape = std::get<std::string>(p.second.ref());
+                continue;
+            }
+        }
+    }
 }

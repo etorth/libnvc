@@ -143,7 +143,37 @@ void libnvc::nvim_widget::draw_ex(int dst_x, int dst_y, int src_x, int src_y, in
             draw_char(&curr_dst, rect_show_ptr, curr_cell.len4_cstr(), color_fg, color_bg, color_sp, hl_def->italic, hl_def->bold, hl_def->underline, hl_def->undercurl);
 
             if((size_t)(x) == m_client->cursor_x() && (size_t)(y) == m_client->cursor_y()){
-                draw_char(&curr_dst, rect_show_ptr, " ", 0, 0x0000ff00, 0, false, false, false, false);
+                if(auto &modedef = m_client->get_modedef(); !modedef.cursor_shape.empty()){
+                    if(modedef.cursor_shape == "block"){
+                        draw_char(&curr_dst, rect_show_ptr, " ", 0, 0x0000ff00, 0, false, false, false, false);
+                    }else if(modedef.cursor_shape == "horizontal"){
+                        libnvc_rect cursor_rect;
+                        const double percent = modedef.cell_percentage / 100.0;
+
+                        cursor_rect.x = 0;
+                        cursor_rect.y = curr_dst.h * (1.0 - percent);
+                        cursor_rect.w = curr_dst.w;
+                        cursor_rect.h = curr_dst.h * percent;
+
+                        if(rect_show_ptr){
+                            inn_overlap_region(*rect_show_ptr, &cursor_rect);
+                        }
+                        draw_char(&curr_dst, &cursor_rect, " ", 0, 0x0000ff00, 0, false, false, false, false);
+                    }else if(modedef.cursor_shape == "vertical"){
+                        libnvc_rect cursor_rect;
+                        const double percent = modedef.cell_percentage / 100.0;
+
+                        cursor_rect.x = 0;
+                        cursor_rect.y = 0;
+                        cursor_rect.w = curr_dst.w * percent;
+                        cursor_rect.h = curr_dst.h;
+
+                        if(rect_show_ptr){
+                            inn_overlap_region(*rect_show_ptr, &cursor_rect);
+                        }
+                        draw_char(&curr_dst, &cursor_rect, " ", 0, 0x0000ff00, 0, false, false, false, false);
+                    }
+                }
             }
         }
     }

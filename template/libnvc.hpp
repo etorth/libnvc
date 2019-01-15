@@ -908,6 +908,9 @@ namespace libnvc
 
     class nvim_client: public api_client
     {
+        private:
+            friend class nvim_widget;
+
         public:
             struct hl_attrdef
             {
@@ -936,8 +939,26 @@ namespace libnvc
                 }
             };
 
+        protected:
+            struct mode_infodef
+            {
+                int attr_id         = 0;
+                int cell_percentage = 0;
+
+                std::string name         = "";
+                std::string short_name   = "";
+                std::string cursor_shape = "";
+            };
+
         private:
             std::vector<hl_attrdef> m_hldefs;
+
+        private:
+            int  m_mode;
+            bool m_cursor_style_enabled;
+
+        private:
+            std::vector<mode_infodef> m_modedefs;
 
         private:
             std::unordered_map<std::string, libnvc::object> m_options;
@@ -1032,6 +1053,13 @@ namespace libnvc
             void on_grid_cursor_goto(int64_t, int64_t, int64_t);
 
         public:
+            void on_mode_info_set(bool, const std::vector<libnvc::object> &);
+            void on_mode_change(const std::string &, int64_t mode)
+            {
+                m_mode = (int)(mode);
+            }
+
+        public:
             void on_hl_attr_define(int64_t, const std::map<std::string, libnvc::object> &, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &);
 
         public:
@@ -1050,6 +1078,12 @@ namespace libnvc
             const CELL &get_backcell(size_t x, size_t y) const
             {
                 return m_backboard->get_cell(x, y);
+            }
+
+        public:
+            const auto &get_modedef() const
+            {
+                return m_modedefs.at(m_mode);
             }
     };
 
