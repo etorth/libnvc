@@ -108,7 +108,8 @@ int main()
         SDL_RenderCopy(sdl_dev.m_renderer, ptex, nullptr, nullptr);
 
         widget.update();
-        widget.draw_ex(0, 0, 0, 0, window_width, window_height);
+        // widget.draw_ex(0, 0, 0, 0, window_width, window_height);
+        widget.draw_ex(0, 0, 10, 20, 550, 350);
 
         SDL_RenderPresent(sdl_dev.m_renderer);
         SDL_Delay(10);
