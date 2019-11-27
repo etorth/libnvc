@@ -31,8 +31,20 @@ bool process_event(nvim_sdlwidget *pwidget)
         switch(event.type){
             case SDL_WINDOWEVENT:
                 {
-                    if(event.window.event == SDL_WINDOWEVENT_CLOSE){
-                        return true;
+                    switch(event.window.event){
+                        case SDL_WINDOWEVENT_CLOSE:
+                            {
+                                return true;
+                            }
+                        case SDL_WINDOWEVENT_SIZE_CHANGED:
+                            {
+                                pwidget->request_resize(event.window.data1, event.window.data2);
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
                     }
                     break;
                 }

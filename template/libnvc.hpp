@@ -841,6 +841,16 @@ namespace libnvc
             }
 
         public:
+            void resize(size_t w, size_t h)
+            {
+                m_grid_width = w;
+                m_grid_height = h;
+
+                m_cells.clear();
+                m_cells.resize(width() * height());
+            }
+
+        public:
             size_t cursor_x() const
             {
                 return m_cursor_x;
@@ -1059,6 +1069,11 @@ namespace libnvc
             void on_grid_clear(int64_t)
             {
                 m_currboard->clear_char();
+            }
+
+            void on_grid_resize(int64_t, int64_t w, int64_t h)
+            {
+                m_currboard->resize(w, h);
             }
 
             void on_grid_cursor_goto(int64_t, int64_t, int64_t);

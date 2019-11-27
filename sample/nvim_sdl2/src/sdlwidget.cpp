@@ -41,8 +41,8 @@ nvim_sdlwidget::nvim_sdlwidget(libnvc::io_device *io_dev, sdl_device *sdl_dev, s
 
 void nvim_sdlwidget::draw_ex(int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h)
 {
-    int xoff = dst_x + (m_pixel_width - width() * m_sdldev->font_width()) / 2;
-    int yoff = dst_y + (m_pixel_height - height() * m_sdldev->font_height()) / 2;
+    const int xoff = dst_x + (pixel_width() - width() * m_sdldev->font_width()) / 2;
+    const int yoff = dst_y + (pixel_height() - height() * m_sdldev->font_height()) / 2;
     libnvc::nvim_widget::draw_ex(dst_x + xoff, dst_y + yoff, src_x, src_y, src_w, src_h);
 }
 
