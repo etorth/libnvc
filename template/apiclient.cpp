@@ -412,7 +412,9 @@ int64_t libnvc::api_client::poll_one()
 
     // seems no official way to check if the root is valid
     // internally we can check if it equals to mpack_tree_nil_node(&m_tree)
-    log_server_pack_node(rootopt.value());
+    if(std::getenv("LIBNVC_ENABLE_LOG")){
+        log_server_pack_node(rootopt.value());
+    }
 
     if(auto root_type = mpack_node_type(rootopt.value()); root_type != mpack_type_array){
         throw std::runtime_error(str_fflprintf(": The msgpack from nvim server is not an array: %s", mpack_type_to_string(root_type)));
