@@ -53,6 +53,11 @@ bool process_event(nvim_sdlwidget *pwidget)
                                 pwidget->input_keystr("<ESC>");
                                 break;
                             }
+                        case SDLK_TAB:
+                            {
+                                pwidget->input_keystr("<Tab>");
+                                break;
+                            }
                         default:
                             {
                                 break;
