@@ -20,6 +20,7 @@
 #include <cinttypes>
 #include <stdexcept>
 #include "libnvc.hpp"
+#include "sdlutil.hpp"
 #include "sdldevice.hpp"
 #include "sdlwidget.hpp"
 
@@ -60,6 +61,18 @@ bool process_event(nvim_sdlwidget *pwidget)
                             }
                         default:
                             {
+                                const char ch = sdl_key_event_char(event);
+                                if(ch != '\0'){
+                                    if(event.key.keysym.mod & KMOD_CTRL){
+                                        char buf[128];
+                                        std::sprintf(buf, "<C-%c>", ch);
+                                        pwidget->input_keystr(buf);
+                                    }else if(SDL_IsTextInputActive() == SDL_FALSE){
+                                        char buf[128];
+                                        std::sprintf(buf, "%c", ch);
+                                        pwidget->input_keystr(buf);
+                                    }
+                                }
                                 break;
                             }
                     }
