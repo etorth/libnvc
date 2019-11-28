@@ -104,6 +104,29 @@ bool process_event(nvim_sdlwidget *pwidget)
     return false;
 }
 
+std::vector<SDL_Texture *> load_bg_imgs(SDL_Renderer *renderer)
+{
+    std::vector<SDL_Texture *> imgs;
+    for(int i = 0;; ++i){
+        char namebuf[128];
+        std::sprintf(namebuf, "./img/bg%d.jpg", i);
+
+        auto surf = IMG_Load(namebuf);
+        if(surf == nullptr){
+            break;
+        }
+
+        auto tex = SDL_CreateTextureFromSurface(renderer, surf);
+        if(tex == nullptr){
+            throw std::runtime_error(std::string("SDL_CreateTextureFromSurface() failed: ") + SDL_GetError());
+        }
+
+        SDL_FreeSurface(surf);
+        imgs.push_back(tex);
+    }
+    return imgs;
+}
+
 int main()
 {
     // start nvim quickly:
@@ -118,24 +141,19 @@ int main()
     const size_t widget_width  = window_width;
     const size_t widget_height = window_height;
 
-    sdl_device sdl_dev(window_width, window_height, "./font.ttf", 15);
+    sdl_device sdl_dev(window_width, window_height, "./font/font.ttf", 16);
     nvim_sdlwidget widget(&socket, &sdl_dev, widget_width, widget_height);
-
-    // auto surf = IMG_Load("./bg.png");
-    // if(surf == nullptr){
-    //     throw std::runtime_error(std::string("IMG_Load() failed: ") + IMG_GetError());
-    // }
-    //
-    // auto ptex = SDL_CreateTextureFromSurface(sdl_dev.m_renderer, surf);
-    // if(ptex == nullptr){
-    //     throw std::runtime_error(std::string("SDL_CreateTextureFromSurface() failed: ") + SDL_GetError());
-    // }
+    auto bg_imgs =  load_bg_imgs(sdl_dev.m_renderer);
 
     while(!process_event(&widget)){
         SDL_SetRenderDrawColor(sdl_dev.m_renderer, 0, 0, 0, 255);
         SDL_RenderClear(sdl_dev.m_renderer);
 
-        // SDL_RenderCopy(sdl_dev.m_renderer, ptex, nullptr, nullptr);
+        if(!bg_imgs.empty()){
+            auto tex = bg_imgs.at((SDL_GetTicks() / 100) % bg_imgs.size());
+            SDL_SetTextureAlphaMod(tex, 100);
+            SDL_RenderCopy(sdl_dev.m_renderer, tex, nullptr, nullptr);
+        }
 
         widget.update();
         widget.draw_ex(0, 0, 0, 0, window_width, window_height);
@@ -144,6 +162,8 @@ int main()
         SDL_Delay(10);
     }
 
-    // SDL_DestroyTexture(ptex);
+    for(auto p: bg_imgs){
+        SDL_DestroyTexture(p);
+    }
     return 0;
 }
