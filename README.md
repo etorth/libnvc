@@ -35,13 +35,13 @@ $ cmake ../libnvc -DCMAKE_INSTALL_PREFIX=install
 $ make && make install
 
 # build the sample project, a simple nvim gui
-# currently need to manually start the nvim first, will get rid of this later
 $ cd $HOME
 $ mkdir b_nvim_sdl2 && cd b_nvim_sdl2
 $ cmake ../libnvc/sample/nvim_sdl2 -DCMAKE_INSTALL_PREFIX=install -DLIBNVC_INCLUDE=$HOME/b_libnvc/install/include -DLIBNVC_LIB=$HOME/b_libnvc/install/lib
 $ make && make install
 
 # run the sample gui
+# currently need to manually start the nvim first, will get rid of this later
 $ nvim --headless --listen "127.0.0.1:6666" &
 $ cd $HOME/b_nvim_sdl2/install/nvim_sdl2 && nvim_sdl2
 ```
