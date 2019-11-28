@@ -27,6 +27,16 @@ libnvc use asio and mpack internally but hiden by pimpl.
 so there is zero dependenct for user's building environment.
 
 ```bash
+# build the libnvc library
+$ cd $HOME
 $ git clone https://github.com/etorth/libnvc.git
-$ mkdir b && cd b && cmake ../libnvc
+$ mkdir b_libnvc && cd b_libnvc
+$ cmake ../libnvc -DCMAKE_INSTALL_PREFIX=install
+$ make && make install
+
+# build the sample project, a simple nvim gui
+$ cd $HOME
+$ mkdir b_nvim_sdl2 && cd b_nvim_sdl2
+$ cmake ../libnvc/sample/nvim_sdl2 -DCMAKE_INSTALL_PREFIX=install -DLIBNVC_INCLUDE=$HOME/b_libnvc/install/include -DLIBNVC_LIB=$HOME/b_libnvc/install/lib
+$ make && make install
 ```
