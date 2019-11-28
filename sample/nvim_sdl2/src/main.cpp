@@ -156,7 +156,7 @@ int main()
         }
 
         widget.update();
-        widget.draw_ex(0, 0, 0, 0, window_width, window_height);
+        widget.draw_ex(0, 0, 0, 0, widget.pixel_width(), widget.pixel_height());
 
         SDL_RenderPresent(sdl_dev.m_renderer);
         SDL_Delay(10);
