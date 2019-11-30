@@ -43,7 +43,7 @@ namespace libnvc
             reproc_device_impl() = default;
 
         public:
-            void spawn(int, char *argv[])
+            void spawn(char *argv[])
             {
                 reproc::stop_actions stop_actions
                 {
@@ -54,7 +54,19 @@ namespace libnvc
 
                 reproc::options options;
                 options.stop_actions = stop_actions;
-                std::error_code ec = m_process.start(argv, options);
+
+                const auto ec = [argv, &options, this]()
+                {
+                    if(argv){
+                        return m_process.start(argv, options);
+                    }else{
+                        std::vector<const char *> spawn_args
+                        {
+                            "nvim", "--embed", nullptr,
+                        };
+                        return m_process.start(spawn_args.data(), options);
+                    }
+                }();
 
                 if(ec == std::errc::no_such_file_or_directory){
                     throw std::runtime_error("neovim not found, make sure it's in PATH");
@@ -74,9 +86,13 @@ namespace libnvc
             }
 
         public:
-            size_t send(const char *, size_t)
+            size_t send(const char *buf, size_t size)
             {
-                return 0;
+                const auto ec = m_process.write(reinterpret_cast<const uint8_t *>(buf), size);
+                if(ec){
+                    throw std::runtime_error(ec.message());
+                }
+                return size;
             }
 
             size_t recv(char *buf, size_t size)
@@ -90,9 +106,16 @@ namespace libnvc
     };
 }
 
-void libnvc::reproc_device::spawn(int argc, char *argv[])
+libnvc::reproc_device::reproc_device()
+    : m_impl(std::make_unique<reproc_device_impl>())
+{}
+
+libnvc::reproc_device::~reproc_device()
+{}
+
+void libnvc::reproc_device::spawn(char *argv[])
 {
-    m_impl->spawn(argc, argv);
+    m_impl->spawn(argv);
 }
 
 void libnvc::reproc_device::kill()

@@ -304,10 +304,10 @@ namespace libnvc
             reproc_device();
 
         public:
-            virtual ~reproc_device() = default;
+            virtual ~reproc_device();
 
         public:
-            void spawn(int, char *[]);
+            void spawn(char *argv[] = nullptr);
             void kill();
 
         public:

@@ -129,12 +129,8 @@ std::vector<SDL_Texture *> load_bg_imgs(SDL_Renderer *renderer)
 
 int main()
 {
-    // start nvim quickly:
-    // $ nvim --headless --listen "127.0.0.1:6666"
-    libnvc::asio_socket socket;
-    if(!socket.connect("localhost", 6666)){
-        throw std::runtime_error("Failed to connect to localhost:6666");
-    }
+    libnvc::reproc_device reproc_dev;
+    reproc_dev.spawn();
 
     const size_t window_width  = 800;
     const size_t window_height = 600;
@@ -142,7 +138,7 @@ int main()
     const size_t widget_height = window_height;
 
     sdl_device sdl_dev(window_width, window_height, "./font/font.ttf", 16);
-    nvim_sdlwidget widget(&socket, &sdl_dev, widget_width, widget_height);
+    nvim_sdlwidget widget(&reproc_dev, &sdl_dev, widget_width, widget_height);
     auto bg_imgs =  load_bg_imgs(sdl_dev.m_renderer);
 
     while(!process_event(&widget)){
