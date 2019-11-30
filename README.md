@@ -29,8 +29,7 @@ there is zero dependenct for user's building environment.
 libnvc use asio, mpack and reproc internally but hiden by pimpl.  
 
 ```bash
-# build the libnvc library
-# obviously nvim should be in your PATH
+# build the libnvc library, nvim should be in your PATH
 $ cd $HOME
 $ git clone https://github.com/etorth/libnvc.git
 $ mkdir b_libnvc && cd b_libnvc
