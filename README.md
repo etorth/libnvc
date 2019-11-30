@@ -1,7 +1,8 @@
 # libnvc
 
-another cpp nvim msgpack-rpc client.  
-nvim's rpc interface is convenient but not something you can finish in 10 minutes.
+another c++ nvim msgpack-rpc client.  
+nvim's rpc interface is convenient but not something you can finish in 10 minutes.  
+this repo creates libnvc.a and libnvc.hpp and you can read/write a process running neovim easily.
 
 ![image](https://github.com/etorth/libnvc/raw/master/readme/cap2.png)
 ![image](https://github.com/etorth/libnvc/raw/master/readme/cap1.png)
@@ -24,7 +25,7 @@ int main()
 ```
 
 ### build  
-libnvc use asio and mpack internally but hiden by pimpl.  
+libnvc use asio, mpack and reproc internally but hiden by pimpl.  
 so there is zero dependenct for user's building environment.
 
 ```bash
