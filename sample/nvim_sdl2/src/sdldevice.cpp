@@ -40,7 +40,7 @@ sdl_device::sdl_device(size_t win_width, size_t win_height, const char *path_ttf
         throw std::runtime_error(std::string(": IMG error: ") + IMG_GetError());
     }
 
-    m_window = SDL_CreateWindow("LIBNVC-SDLWIDGET", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, win_width, win_height, SDL_WINDOW_RESIZABLE);
+    m_window = SDL_CreateWindow("SDLWIDGET", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, win_width, win_height, SDL_WINDOW_RESIZABLE);
     if(m_window == nullptr){
         throw std::runtime_error(std::string(": SDL error: ") + SDL_GetError());
     }
