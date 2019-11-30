@@ -291,6 +291,29 @@ namespace libnvc
             virtual size_t send(const char *, size_t);
             virtual size_t recv(      char *, size_t);
     };
+
+    class reproc_device: public libnvc::io_device
+    {
+        private:
+            class reproc_device_impl;
+
+        public:
+            std::unique_ptr<reproc_device_impl> m_impl;
+
+        public:
+            reproc_device();
+
+        public:
+            virtual ~reproc_device() = default;
+
+        public:
+            void spawn(int, char *[]);
+            void kill();
+
+        public:
+            size_t send(const char *, size_t) override;
+            size_t recv(      char *, size_t) override;
+    };
 }
 
 namespace libnvc
