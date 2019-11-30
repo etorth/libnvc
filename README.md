@@ -30,6 +30,7 @@ libnvc use asio, mpack and reproc internally but hiden by pimpl.
 
 ```bash
 # build the libnvc library
+# obviously nvim should be in your PATH
 $ cd $HOME
 $ git clone https://github.com/etorth/libnvc.git
 $ mkdir b_libnvc && cd b_libnvc
@@ -37,6 +38,7 @@ $ cmake ../libnvc -DCMAKE_INSTALL_PREFIX=install
 $ make && make install
 
 # build the sample project, a simple nvim gui
+# this requires SDL2, SDL2-image and SDL2-ttf installed
 $ cd $HOME
 $ mkdir b_nvim_sdl2 && cd b_nvim_sdl2
 $ cmake ../libnvc/sample/nvim_sdl2 -DCMAKE_INSTALL_PREFIX=install -DLIBNVC_INCLUDE=$HOME/b_libnvc/install/include -DLIBNVC_LIB=$HOME/b_libnvc/install/lib
