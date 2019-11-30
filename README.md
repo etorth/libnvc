@@ -3,7 +3,8 @@
 another cpp nvim msgpack-rpc client.  
 nvim's rpc interface is convenient but not something you can finish in 10 minutes.
 
-![image](https://github.com/etorth/libnvc/raw/master/readme/nvim.png)
+![image](https://github.com/etorth/libnvc/raw/master/readme/cap2.png)
+![image](https://github.com/etorth/libnvc/raw/master/readme/cap1.png)
 
 ```cpp
 #include "libnvc.hpp"
@@ -41,7 +42,5 @@ $ cmake ../libnvc/sample/nvim_sdl2 -DCMAKE_INSTALL_PREFIX=install -DLIBNVC_INCLU
 $ make && make install
 
 # run the sample gui
-# currently need to manually start the nvim first, will get rid of this later
-$ nvim --headless --listen "127.0.0.1:6666" &
-$ cd $HOME/b_nvim_sdl2/install/nvim_sdl2 && nvim_sdl2
+$ $HOME/b_nvim_sdl2/install/nvim_sdl2/nvim_sdl2
 ```
