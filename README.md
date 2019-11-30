@@ -25,7 +25,7 @@ int main()
 ```
 
 ### build  
-libnvc use asio and mpack internally but hiden by pimpl.  
+libnvc use asio, mpack and reproc internally but hiden by pimpl.  
 so there is zero dependenct for user's building environment.
 
 ```bash
