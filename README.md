@@ -25,8 +25,8 @@ int main()
 ```
 
 ### build  
+there is zero dependenct for user's building environment.  
 libnvc use asio, mpack and reproc internally but hiden by pimpl.  
-so there is zero dependenct for user's building environment.
 
 ```bash
 # build the libnvc library
