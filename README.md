@@ -1,6 +1,6 @@
 # libnvc
 
-another cpp nvim msgpack-rpc client.  
+another c++ nvim msgpack-rpc client.  
 nvim's rpc interface is convenient but not something you can finish in 10 minutes.  
 this repo creates libnvc.a and libnvc.hpp and you can read/write a process running neovim easily.
 
