@@ -25,7 +25,7 @@ int main()
     client.nvim_input("$i123<CR>123<ESC>");
     client.nvim_buf_set_name(1, "1234");
 ```
-or use ```reproc_device``` to spawn a process running background:
+or use ```reproc_device``` to spawn a process running nvim in background:
 
 ```cpp
 #include "libnvc.hpp"
