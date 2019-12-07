@@ -7,6 +7,8 @@ this repo creates libnvc.a and you can use it to read/write a process running ne
 ![image](https://github.com/etorth/libnvc/raw/master/readme/cap2.png)
 ![image](https://github.com/etorth/libnvc/raw/master/readme/cap1.png)
 
+start nvim and use ```asio_socket``` to talk to it:
+
 ```cpp
 #include "libnvc.hpp"
 
@@ -20,6 +22,21 @@ int main()
     }
 
     libnvc::api_client client(&socket);
+    client.nvim_input("$i123<CR>123<ESC>");
+    client.nvim_buf_set_name(1, "1234");
+```
+or use ```reproc_device``` to spawn a process running background:
+
+```cpp
+#include "libnvc.hpp"
+
+int main()
+{
+    // spawn nvim process with default parameters
+    libnvc::reproc_device reproc_dev;
+    reproc_dev.spawn();
+
+    libnvc::api_client client(&reproc_dev);
     client.nvim_input("$i123<CR>123<ESC>");
     client.nvim_buf_set_name(1, "1234");
 ```
