@@ -62,5 +62,5 @@ $ cmake ../libnvc/sample/nvim_sdl2 -DCMAKE_INSTALL_PREFIX=install -DLIBNVC_INCLU
 $ make && make install
 
 # run the sample gui
-$ $HOME/b_nvim_sdl2/install/nvim_sdl2/nvim_sdl2
+$ cd $HOME/b_nvim_sdl2/install/nvim_sdl2 && ./nvim_sdl2
 ```
