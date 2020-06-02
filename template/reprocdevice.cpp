@@ -72,7 +72,7 @@ namespace libnvc
                     throw fflerror("neovim not found, make sure it's in PATH");
                 }
                 else if(ec){
-                    throw fflerror(ec.message());
+                    throw fflerror("%s", ec.message().c_str());
                 }
 
                 m_drain_async = std::async(std::launch::async, [this]()
@@ -91,7 +91,7 @@ namespace libnvc
             {
                 const auto ec = m_process.write(reinterpret_cast<const uint8_t *>(buf), size);
                 if(ec){
-                    throw fflerror(ec.message());
+                    throw fflerror("%s", ec.message().c_str());
                 }
                 return size;
             }
