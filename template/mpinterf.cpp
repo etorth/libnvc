@@ -25,7 +25,7 @@
 #include <type_traits>
 #include "mpack.h"
 #include "libnvc.hpp"
-#include "strfunc.hpp"
+#include "fflerror.hpp"
 
 libnvc::mpinterf::writer::writer()
     : m_storage()
@@ -53,7 +53,7 @@ void libnvc::mpinterf::writer::flush()
 {
     if(m_writer_alive){
         if(mpack_writer_destroy(reinterpret_cast<mpack_writer_t *>(storage())) != mpack_ok){
-            throw std::runtime_error(str_fflprintf(": Failed to call mpack_writer_destroy() to flush data"));
+            throw fflerror("Failed to call mpack_writer_destroy() to flush data");
         }
         m_writer_alive = false;
     }
@@ -63,7 +63,7 @@ std::string_view libnvc::mpinterf::writer::pack()
 {
     this->flush();
     if(m_data == nullptr){
-        throw std::runtime_error(str_fflprintf(": Try to pack an empty writer"));
+        throw fflerror("Try to pack an empty writer");
     }
     return {m_data, m_size};
 }
@@ -137,7 +137,7 @@ void libnvc::mpinterf::writer::write(const libnvc::object& obj)
     }
 
     else{
-        throw std::runtime_error(str_fflprintf(": libnvc::object holds unknown type"));
+        throw fflerror("libnvc::object holds unknown type");
     }
 }
 

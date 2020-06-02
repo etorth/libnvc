@@ -23,7 +23,7 @@
 #include <reproc++/reproc.hpp>
 #include <reproc++/sink.hpp>
 #include "libnvc.hpp"
-#include "strfunc.hpp"
+#include "fflerror.hpp"
 
 namespace libnvc
 {
@@ -69,9 +69,10 @@ namespace libnvc
                 }();
 
                 if(ec == std::errc::no_such_file_or_directory){
-                    throw std::runtime_error("neovim not found, make sure it's in PATH");
-                }else if(ec){
-                    throw std::runtime_error(ec.message());
+                    throw fflerror("neovim not found, make sure it's in PATH");
+                }
+                else if(ec){
+                    throw fflerror(ec.message());
                 }
 
                 m_drain_async = std::async(std::launch::async, [this]()
@@ -90,7 +91,7 @@ namespace libnvc
             {
                 const auto ec = m_process.write(reinterpret_cast<const uint8_t *>(buf), size);
                 if(ec){
-                    throw std::runtime_error(ec.message());
+                    throw fflerror(ec.message());
                 }
                 return size;
             }

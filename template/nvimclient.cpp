@@ -19,12 +19,13 @@
 #include <utf8.h>
 #include <cinttypes>
 #include "libnvc.hpp"
-#include "strfunc.hpp"
+#include "fflerror.hpp"
 
 static int measure_utf8_column_width(uint32_t utf8_code)
 {
     // check stackoverflow:
     // https://stackoverflow.com/questions/5117393/number-of-character-cells-used-by-string
+    // or try this: https://github.com/christianparpart/libunicode
     std::setlocale(LC_ALL, "");
 
     char buf[8];
@@ -33,7 +34,7 @@ static int measure_utf8_column_width(uint32_t utf8_code)
 
     wchar_t wcbuf[2];
     if(std::mbstowcs(wcbuf, buf, 2) != 1){
-        throw std::runtime_error(str_fflprintf(": Failed to convert to wide char for column meansurement"));
+        throw fflerror("Failed to convert to wide char for column meansurement");
     }
     return wcwidth(wcbuf[0]);
 }
@@ -41,7 +42,7 @@ static int measure_utf8_column_width(uint32_t utf8_code)
 static size_t peek_utf8_code(const char *str, size_t length, uint32_t *pcode)
 {
     if(str == nullptr){
-        throw std::invalid_argument(str_fflprintf(": Invalid argument: (nullptr)"));
+        throw fflerror("Invalid argument: (nullptr)");
     }
 
     if(length == 0){
@@ -49,7 +50,7 @@ static size_t peek_utf8_code(const char *str, size_t length, uint32_t *pcode)
     }
 
     if(length == 0){
-        throw std::invalid_argument(str_fflprintf(": Invalid argument: empty string"));
+        throw fflerror("Invalid argument: empty string");
     }
 
     auto pbegin = str;
@@ -58,12 +59,12 @@ static size_t peek_utf8_code(const char *str, size_t length, uint32_t *pcode)
     try{
         utf8::advance(pend, 1, str + length);
     }catch(...){
-        throw std::invalid_argument(str_fflprintf(": Invalid argument: failed to peek the first utf8 code"));
+        throw fflerror("Invalid argument: failed to peek the first utf8 code");
     }
 
     size_t advanced = pend - pbegin;
     if(advanced > 4){
-        throw std::runtime_error(str_fflprintf(": First utf8 code from \"%s\" is longer than 4 bytes: %zu", str, advanced));
+        throw fflerror("First utf8 code from \"%s\" is longer than 4 bytes: %zu", str, advanced);
     }
 
     if(pcode){
@@ -96,7 +97,7 @@ void libnvc::CELL::set(uint32_t utf8, int hl_id)
             }
         default:
             {
-                throw std::invalid_argument(str_fflprintf(": Invalid utf8 code: %" PRIu32, m_utf8code));
+                throw fflerror("Invalid utf8 code: %" PRIu32, m_utf8code);
             }
     }
 }
@@ -138,7 +139,7 @@ void libnvc::nvim_client::on_grid_scroll(int64_t, int64_t top, int64_t bot, int6
     // some line in the region will get out of print, it's not a ``unchanged region" to just move up and down...
 
     if(cols != 0){
-        throw std::runtime_error(str_fflprintf(": on_grid_scroll(..., cols = %" PRIu64 ")", cols));
+        throw fflerror("on_grid_scroll(..., cols = %" PRIu64 ")", cols);
     }
 
     if(rows > 0){
@@ -180,7 +181,7 @@ size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str,
         case 2:
             {
                 if(repeat != 1){
-                    throw std::runtime_error(str_fflprintf(": Protocol error: wide utf8 char get column width: %d", column_width));
+                    throw fflerror("Protocol error: wide utf8 char get column width: %d", column_width);
                 }
                 m_currboard->get_cell(x + 1, y).clear();
                 return 2;
@@ -191,7 +192,7 @@ size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str,
             }
         default:
             {
-                throw std::runtime_error(str_fflprintf(": Invalid utf8 column width: %d", column_width));
+                throw fflerror("Invalid utf8 column width: %d", column_width);
             }
     }
 }
@@ -226,7 +227,7 @@ void libnvc::nvim_client::on_grid_line(int64_t, int64_t row, int64_t col_start, 
                 }
             default:
                 {
-                    throw std::runtime_error(str_fflprintf(": Invalid array for cell (%zu, %zu)", x, y));
+                    throw fflerror("Invalid array for cell (%zu, %zu)", x, y);
                 }
         }
         x += set_cell(x, y, utf8char, hl_id, repeat);

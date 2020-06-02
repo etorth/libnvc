@@ -19,7 +19,7 @@
 #include <mutex>
 #include <cstdio>
 #include "libnvc.hpp"
-#include "strfunc.hpp"
+#include "fflerror.hpp"
 
 // give a basic implementation
 // later to switch to better log functionality
@@ -67,7 +67,7 @@ void libnvc::log(int log_type, const char *log_str)
             }
         default:
             {
-                g_log_func(libnvc::LOG_WARNING, str_fflprintf(": Unknown log type (%d) with message: %s", log_type, log_str).c_str());
+                g_log_func(libnvc::LOG_WARNING, str_printf(": Unknown log type (%d) with message: %s", log_type, log_str).c_str());
                 return;
             }
     }

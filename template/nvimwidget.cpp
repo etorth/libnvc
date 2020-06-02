@@ -17,7 +17,7 @@
  */
 
 #include "libnvc.hpp"
-#include "strfunc.hpp"
+#include "fflerror.hpp"
 
 libnvc::nvim_widget::nvim_widget(libnvc::io_device * pdev, size_t width, size_t height, size_t cell_width, size_t cell_height)
     : m_client(std::make_unique<libnvc::nvim_client>(pdev, width, height))
@@ -25,7 +25,7 @@ libnvc::nvim_widget::nvim_widget(libnvc::io_device * pdev, size_t width, size_t 
     , m_cell_height(cell_height)
 {
     if(m_cell_width == 0 || m_cell_height == 0){
-        throw std::invalid_argument(str_fflprintf(": Invalid argument: nvim_widget(%p, %zu, %zu, %zu, %zu)", pdev, width, height, cell_width, cell_height));
+        throw fflerror("Invalid argument: nvim_widget(%p, %zu, %zu, %zu, %zu)", pdev, width, height, cell_width, cell_height);
     }
 }
 
@@ -116,7 +116,7 @@ void libnvc::nvim_widget::draw_ex(int dst_x, int dst_y, int src_x, int src_y, in
                 // we are crossing the boundary
 
                 if(!inn_overlap_region(src, &curr_src)){
-                    throw std::runtime_error(str_fflprintf(": Can't reach here, boundary calculation failed"));
+                    throw fflerror("Can't reach here, boundary calculation failed");
                 }
 
                 rect_show.x = curr_src.x % cell_w;
