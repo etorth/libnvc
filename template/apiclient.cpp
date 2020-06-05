@@ -256,6 +256,34 @@ namespace
                 }
         }
     }
+
+    template<> inline libnvc::extbuf mp_read<libnvc::extbuf>(mpack_node_t node)
+    {
+        libnvc::extbuf res_ext;
+        check_node_type(node, mpack_type_ext);
+
+        const int8_t type = mpack_node_exttype(node);
+        const uint32_t datalen = mpack_node_data_len(node);
+
+        if(type == 0 || datalen == 0){
+            throw fflerror("Invalid mpack extension: type = %d, datalen = %zu", (int)(type), (size_t)(datalen));
+        }
+
+        res_ext.type = type;
+        res_ext.buf.resize(datalen);
+
+        const size_t copied_bytes = mpack_node_copy_data(node, res_ext.buf.data(), res_ext.buf.size());
+        if(copied_bytes != res_ext.buf.size()){
+            throw fflerror("Failed to copy mpack extension data: requestd %zu bytes, copied %zu bytes.", res_ext.buf.size(), copied_bytes);
+        }
+
+        return res_ext;
+    }
+
+    template<> inline std::vector<libnvc::extbuf> mp_read<std::vector<libnvc::extbuf>>(mpack_node_t node)
+    {
+        return mp_read_array<libnvc::extbuf>(node);
+    }
 }
 
 std::string libnvc::print_object(const libnvc::object &obj)
