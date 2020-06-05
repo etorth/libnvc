@@ -331,6 +331,11 @@ namespace libnvc
     };
     using void_type = struct _void_type;
 
+    struct extbuf
+    {
+        int8_t type;
+        std::vector<char> buf;
+    };
 
     // TODO: need a better implementation
     // using helper class object_wrapper since  we can't define recursive type in cpp
@@ -343,6 +348,7 @@ namespace libnvc
           int64_t,
           double,
           std::string,
+          libnvc::extbuf,
           std::vector<libnvc::object_wrapper>,
           std::map<std::string, libnvc::object_wrapper>
     >;

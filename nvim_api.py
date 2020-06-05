@@ -93,9 +93,9 @@ class nvimNativeType:
 
     # msgpack extension types
     EXTTYPES = {
-            'Window' : 'int64_t',
-            'Buffer' : 'int64_t',
-            'Tabpage': 'int64_t',
+            'Window' : 'libnvc::extbuf',
+            'Buffer' : 'libnvc::extbuf',
+            'Tabpage': 'libnvc::extbuf',
         }
 
     PAIRTYPE = 'ArrayOf(Integer, 2)'
