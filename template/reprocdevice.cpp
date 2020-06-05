@@ -59,10 +59,19 @@ namespace libnvc
                 {
                     if(argv){
                         return m_process.start(argv, options);
-                    }else{
+                    }
+                    else{
+                        const auto binary_name = []() -> std::string
+                        {
+                            if(const auto env_cstr = std::getenv("LIBNVC_NVIM_BINARY")){
+                                return env_cstr;
+                            }
+                            return "nvim";
+                        }();
+
                         std::vector<const char *> spawn_args
                         {
-                            "nvim", "--embed", nullptr,
+                            binary_name.c_str(), "--embed", nullptr,
                         };
                         return m_process.start(spawn_args.data(), options);
                     }
