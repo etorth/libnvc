@@ -4,8 +4,7 @@ another c++ nvim msgpack-rpc client.
 nvim's rpc interface is convenient but not something you can finish in 10 minutes.  
 this repo creates libnvc.a and you can use it to read/write a process running neovim easily.
 
-![image](https://github.com/etorth/libnvc/raw/master/readme/cap2.png)
-![image](https://github.com/etorth/libnvc/raw/master/readme/cap1.png)
+![image](https://github.com/etorth/libnvc/raw/master/readme/cap.gif)
 
 start nvim and use ```asio_socket``` to talk to it:
 
@@ -14,7 +13,7 @@ start nvim and use ```asio_socket``` to talk to it:
 
 int main()
 {
-    // start nvim quickly:
+    // start nvim:
     // $ nvim --listen "127.0.0.1:6666"
     libnvc::asio_socket socket;
     if(!socket.connect("localhost", 6666)){
