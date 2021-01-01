@@ -15,23 +15,17 @@
 #=======================================================================================
 
 PROJECT(LIBNVC)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
-INCLUDE(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
-
-IF(COMPILER_SUPPORTS_CXX17)
-    SET(CMAKE_CXX_STANDARD 17)
-ELSE()
-    MESSAGE(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support.")
-ENDIF()
+SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # add flags to release mode
 # by default won't use release mode
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS}")
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-strict-aliasing")
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wfatal-errors -Wextra -Wunused -Werror")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wfatal-errors -Wextra -Wunused -Werror -f")
 
 # always compile libnvc in debug mode
 # for trace message use LIBNVC_DEBUG_ARG_LIST to enable
