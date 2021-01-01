@@ -537,7 +537,7 @@ int64_t libnvc::api_client::poll_one()
             }
         default:
             {
-                throw fflerror("The msgpack from nvim server has message type: %d, expect [REQ, RESP, NOTIF]: %d", (int)(msg_type));
+                throw fflerror("The msgpack from nvim server has message type: %d, expect [REQ, RESP, NOTIF]", (int)(msg_type));
             }
     }
 }

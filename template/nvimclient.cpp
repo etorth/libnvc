@@ -181,7 +181,7 @@ size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str,
         case 2:
             {
                 if(repeat != 1){
-                    throw fflerror("Protocol error: wide utf8 char get column width: %d", column_width);
+                    throw fflerror("Protocol error: wide utf8 char get column width: %d", (int)(column_width));
                 }
                 m_currboard->get_cell(x + 1, y).clear();
                 return 2;
@@ -192,7 +192,7 @@ size_t libnvc::nvim_client::set_cell(size_t x, size_t y, const std::string &str,
             }
         default:
             {
-                throw fflerror("Invalid utf8 column width: %d", column_width);
+                throw fflerror("Invalid utf8 column width: %d", (int)(column_width));
             }
     }
 }
