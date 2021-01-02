@@ -15,6 +15,9 @@
  *
  * =====================================================================================
  */
+
+#include <cerrno>
+#include <cstdio>
 #include <cstdint>
 #include <cstddef>
 #include <cinttypes>
@@ -127,8 +130,33 @@ std::vector<SDL_Texture *> load_bg_imgs(SDL_Renderer *renderer)
     return imgs;
 }
 
+static std::FILE *g_logfp = nullptr;
 int main()
 {
+    g_logfp = std::fopen("libnvc_sdl2.log", "w");
+    if(!g_logfp){
+        throw std::runtime_error(std::string("failed to open log file libnvc_sdl2.log: ") + std::strerror(errno));
+    }
+
+    std::atexit([]()
+    {
+        if(g_logfp){
+            std::fclose(g_logfp);
+            g_logfp = nullptr;
+        }
+    });
+
+    libnvc::set_log([](int log_type, const char *log_str)
+    {
+        switch(log_type){
+            case libnvc::LOG_INFO    : std::fprintf(g_logfp,    "INFO: %s\n", log_str); return;
+            case libnvc::LOG_WARNING : std::fprintf(g_logfp, "WARNING: %s\n", log_str); return;
+            case libnvc::LOG_FATAL   : std::fprintf(g_logfp,   "FATAL: %s\n", log_str); return;
+            case libnvc::LOG_DEBUG   : std::fprintf(g_logfp,   "DEBUG: %s\n", log_str); return;
+            default                  :                                                  return;
+        }
+    });
+
     libnvc::reproc_device reproc_dev;
     reproc_dev.spawn();
 
