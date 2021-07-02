@@ -19,4 +19,4 @@
 #pragma once
 #include <SDL2/SDL.h>
 
-char sdl_key_event_char(const SDL_Event &);
+char sdl_key_event_char(const SDL_Event &, bool);

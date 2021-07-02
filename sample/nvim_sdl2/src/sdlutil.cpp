@@ -16,12 +16,12 @@
  * =====================================================================================
  */
 
-#include <map>
+#include <unordered_map>
 #include "sdlutil.hpp"
 
-char sdl_key_event_char(const SDL_Event &event)
+char sdl_key_event_char(const SDL_Event &event, bool check_shift)
 {
-    const static std::map<SDL_Keycode, const char *> s_keycode_map
+    const static std::unordered_map<SDL_Keycode, const char *> s_lookup_table
     {
         {SDLK_SPACE,        " "   " " },
         {SDLK_QUOTE,        "'"   "\""},
@@ -73,8 +73,8 @@ char sdl_key_event_char(const SDL_Event &event)
         {SDLK_z,            "z"   "Z" },
     };
 
-    if(auto p = s_keycode_map.find(event.key.keysym.sym); p != s_keycode_map.end()){
-        return p->second[(event.key.keysym.mod & KMOD_SHIFT) ? 1 : 0];
+    if(const auto p = s_lookup_table.find(event.key.keysym.sym); p != s_lookup_table.end()){
+        return p->second[check_shift && ((event.key.keysym.mod & KMOD_LSHIFT) || (event.key.keysym.mod & KMOD_RSHIFT)) ? 1 : 0];
     }
     return '\0';
 }

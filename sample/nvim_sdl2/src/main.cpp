@@ -76,7 +76,7 @@ bool process_event(nvim_sdlwidget *pwidget)
                             }
                         default:
                             {
-                                const char ch = sdl_key_event_char(event);
+                                const char ch = sdl_key_event_char(event, true);
                                 if(ch != '\0'){
                                     if(event.key.keysym.mod & KMOD_CTRL){
                                         char buf[128];
