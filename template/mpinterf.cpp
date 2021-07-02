@@ -17,7 +17,6 @@
  */
 
 #include <new>
-#include <map>
 #include <array>
 #include <cstdint>
 #include <variant>
@@ -141,7 +140,7 @@ void libnvc::mpinterf::writer::write(const libnvc::object& obj)
     }
 }
 
-void libnvc::mpinterf::writer::write(const std::map<std::string, libnvc::object>& options)
+void libnvc::mpinterf::writer::write(const std::unordered_map<std::string, libnvc::object>& options)
 {
     mpack_start_map(reinterpret_cast<mpack_writer_t *>(storage()), options.size());
     for(const auto& e : options){

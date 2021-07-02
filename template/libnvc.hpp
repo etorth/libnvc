@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <map>
 #include <vector>
 #include <memory>
 #include <variant>
@@ -350,7 +349,7 @@ namespace libnvc
           std::string,
           libnvc::extbuf,
           std::vector<libnvc::object_wrapper>,
-          std::map<std::string, libnvc::object_wrapper>
+          std::unordered_map<std::string, libnvc::object_wrapper>
     >;
 
     class object_wrapper
@@ -483,7 +482,7 @@ namespace libnvc::mpinterf
             void write(const std::string&);
             void write(const libnvc::object&);
             void write(const std::array<int64_t, 2> &);
-            void write(const std::map<std::string, libnvc::object>&);
+            void write(const std::unordered_map<std::string, libnvc::object>&);
 
         private:
             void start_array(size_t);
@@ -565,8 +564,8 @@ namespace libnvc
             libnvc::io_device *m_iodev;
 
         private:
-            std::map<int64_t, std::function<void(libnvc::resp_variant)>> m_onresp;
-            std::map<int64_t, std::function<void(int64_t, std::string)>> m_onresperr;
+            std::unordered_map<int64_t, std::function<void(libnvc::resp_variant)>> m_onresp;
+            std::unordered_map<int64_t, std::function<void(int64_t, std::string)>> m_onresperr;
 
         public:
             api_client(libnvc::io_device *);
@@ -1115,7 +1114,7 @@ namespace libnvc
             }
 
         public:
-            void on_hl_attr_define(int64_t, const std::map<std::string, libnvc::object> &, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &);
+            void on_hl_attr_define(int64_t, const std::unordered_map<std::string, libnvc::object> &, const std::unordered_map<std::string, libnvc::object> &, const std::vector<libnvc::object> &);
 
         public:
             void on_grid_line(int64_t, int64_t, int64_t, const std::vector<libnvc::object> &);

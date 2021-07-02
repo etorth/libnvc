@@ -167,11 +167,11 @@ namespace
         return res;
     }
 
-    template<typename K, typename V> inline std::map<K, V> mp_read_map(mpack_node_t node)
+    template<typename K, typename V> inline std::unordered_map<K, V> mp_read_map(mpack_node_t node)
     {
         check_node_type(node, mpack_type_map);
 
-        std::map<K, V> res;
+        std::unordered_map<K, V> res;
         const size_t size = mpack_node_map_count(node);
 
         for(size_t index = 0; index < size; ++index){
@@ -197,12 +197,12 @@ namespace
         return mp_read_array<int64_t>(node);
     }
 
-    template<> inline std::vector<std::map<std::string, libnvc::object>> mp_read<std::vector<std::map<std::string, libnvc::object>>>(mpack_node_t node)
+    template<> inline std::vector<std::unordered_map<std::string, libnvc::object>> mp_read<std::vector<std::unordered_map<std::string, libnvc::object>>>(mpack_node_t node)
     {
-        return mp_read_array<std::map<std::string, libnvc::object>>(node);
+        return mp_read_array<std::unordered_map<std::string, libnvc::object>>(node);
     }
 
-    template<> inline std::map<std::string, libnvc::object> mp_read<std::map<std::string, libnvc::object>>(mpack_node_t node)
+    template<> inline std::unordered_map<std::string, libnvc::object> mp_read<std::unordered_map<std::string, libnvc::object>>(mpack_node_t node)
     {
         return mp_read_map<std::string, libnvc::object>(node);
     }
@@ -234,8 +234,8 @@ namespace
                 }
             case mpack_type_map:
                 {
-                    auto res_map = mp_read<std::map<std::string, libnvc::object>>(node);
-                    std::map<std::string, libnvc::object_wrapper> res_map_wrapper;
+                    auto res_map = mp_read<std::unordered_map<std::string, libnvc::object>>(node);
+                    std::unordered_map<std::string, libnvc::object_wrapper> res_map_wrapper;
                     for(auto &item: res_map){
                         res_map_wrapper[item.first] = libnvc::object_wrapper(item.second);
                     }
@@ -372,7 +372,7 @@ template<size_t reqid> libnvc::resp_variant inn_make_resp_variant([[maybe_unused
     }
 }
 
-static void inn_dispatch_req(size_t reqid, int64_t msgid, mpack_node_t node, std::map<int64_t, std::function<void(libnvc::resp_variant)>> &resp_pool)
+static void inn_dispatch_req(size_t reqid, int64_t msgid, mpack_node_t node, std::unordered_map<int64_t, std::function<void(libnvc::resp_variant)>> &resp_pool)
 {
     // there is no argument checking
     // only call this function in api_client::poll

@@ -234,7 +234,7 @@ void libnvc::nvim_client::on_grid_line(int64_t, int64_t row, int64_t col_start, 
     }
 }
 
-void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::map<std::string, libnvc::object> &rgb_attrs, const std::map<std::string, libnvc::object> &, const std::vector<libnvc::object> &)
+void libnvc::nvim_client::on_hl_attr_define(int64_t id, const std::unordered_map<std::string, libnvc::object> &rgb_attrs, const std::unordered_map<std::string, libnvc::object> &, const std::vector<libnvc::object> &)
 {
     hl_attrdef this_attrdef;
     for(auto &elem: rgb_attrs){
@@ -294,7 +294,7 @@ void libnvc::nvim_client::on_mode_info_set(bool enabled, const std::vector<libnv
     m_modedefs.resize(cursor_styles.size());
 
     for(size_t index = 0; index < cursor_styles.size(); ++index){
-        for(auto &p: std::get<std::map<std::string, libnvc::object_wrapper>>(cursor_styles[index])){
+        for(auto &p: std::get<std::unordered_map<std::string, libnvc::object_wrapper>>(cursor_styles[index])){
             if(p.first == "attr_id"){
                 m_modedefs[index].attr_id = std::get<int64_t>(p.second.ref());
                 continue;

@@ -142,7 +142,7 @@ class nvimNativeType:
             return typeOut('std::string', out)
 
         if typename == 'Dictionary':
-            return typeOut('std::map<std::string, libnvc::object>', out)
+            return typeOut('std::unordered_map<std::string, libnvc::object>', out)
 
         if typename in cls.SIMPLETYPES:
             return cls.SIMPLETYPES[typename]
