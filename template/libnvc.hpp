@@ -24,6 +24,8 @@
 #include <cstring>
 #include <cstdint>
 #include <cstddef>
+#include <string>
+#include <string_view>
 #include <functional>
 #include <type_traits>
 #include <unordered_map>

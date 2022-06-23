@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <cinttypes>
+#include <stdexcept>
 #include "sdldevice.hpp"
 
 sdl_device::sdl_device(size_t win_width, size_t win_height, const char *path_ttf, uint8_t ptsize)
