@@ -1,8 +1,5 @@
 # libnvc
 
-I tested nvim-0.6.0 looks there is unexpected exception.
-Pretty busy recently, will fix later, to use it, downgrade your nvim to 0.5.0
-
 another c++-20 nvim msgpack-rpc client, nvim-0.5.0 tested.  
 nvim's rpc interface is convenient but not something you can finish in 10 minutes.  
 this repo creates libnvc.a and you can use it to read/write a process running neovim easily.
