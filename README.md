@@ -50,7 +50,7 @@ libnvc use asio, mpack and reproc internally but hiden by pimpl.
 $ cd $HOME
 $ git clone https://github.com/etorth/libnvc.git
 $ mkdir b_libnvc && cd b_libnvc
-$ cmake ../libnvc -DCMAKE_INSTALL_PREFIX=install -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10
+$ cmake ../libnvc -DCMAKE_INSTALL_PREFIX=install -DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11
 $ make && make install
 
 # build the sample project, a simple nvim gui
