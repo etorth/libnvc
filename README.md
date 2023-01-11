@@ -1,6 +1,6 @@
 # libnvc
 
-I realize nvim now provides libnvim.a, this repo may not be needed anymore.
+I realize nvim now provides ```libnvim.a```, this repo may not be needed anymore.
 
 another c++-20 nvim msgpack-rpc client, nvim-0.5.0 tested.  
 nvim's rpc interface is convenient but not something you can finish in 10 minutes.  
