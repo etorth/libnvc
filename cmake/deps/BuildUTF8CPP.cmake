@@ -1,28 +1,12 @@
-#=======================================================================================
-#
-#        Filename: BuildUTF8CPP.cmake
-#         Created: 05/03/2016 13:19:07
-#     Description: required: LIBNVC_3RD_PARTY_DIR
-#
-#         Version: 1.0
-#        Revision: none
-#        Compiler: cmake
-#
-#          Author: ANHONG
-#           Email: anhonghe@gmail.com
-#    Organization: USTC
-#
-#=======================================================================================
-
 INCLUDE(ExternalProject)
 
 ExternalProject_Add(
-    mirror_utf8cpp
+    utf8cpp
 
-    GIT_REPOSITORY "https://github.com/etorth/mirror_utf8cpp.git"
+    GIT_REPOSITORY "https://github.com/nemtrif/utfcpp.git"
     GIT_TAG        "master"
-  
-    SOURCE_DIR "${LIBNVC_3RD_PARTY_DIR}/mirror_utf8cpp"
+
+    SOURCE_DIR "${LIBNVC_3RD_PARTY_DIR}/utf8cpp"
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -31,5 +15,5 @@ ExternalProject_Add(
     PATCH_COMMAND ""
 )
 
-SET(UTF8CPP_INCLUDE_DIRS "${LIBNVC_3RD_PARTY_DIR}/mirror_utf8cpp/source")
+SET(UTF8CPP_INCLUDE_DIRS "${LIBNVC_3RD_PARTY_DIR}/utf8cpp/source")
 INCLUDE_DIRECTORIES(SYSTEM ${UTF8CPP_INCLUDE_DIRS})

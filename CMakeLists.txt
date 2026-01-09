@@ -1,23 +1,7 @@
-#=======================================================================================
-#
-#        Filename: CMakeLists.txt
-#         Created: 12/25/2018 13:19:07
-#     Description:
-#
-#         Version: 1.0
-#        Revision: none
-#        Compiler: cmake
-#
-#          Author: ANHONG
-#           Email: anhonghe@gmail.com
-#    Organization: USTC
-#
-#=======================================================================================
-
-PROJECT(LIBNVC)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+PROJECT(LIBNVC)
 
-SET(CMAKE_CXX_STANDARD 20)
+SET(CMAKE_CXX_STANDARD 23)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # add flags to release mode
@@ -110,7 +94,7 @@ AUX_SOURCE_DIRECTORY(${MPACK_SRC_DIR}   MPACK_SRC)
 AUX_SOURCE_DIRECTORY(${EXTFUNC_SRC_DIR} EXTFUNC_SRC)
 
 ADD_LIBRARY(nvc ${JINJA2_SRC} ${MPACK_SRC} ${EXTFUNC_SRC})
-ADD_DEPENDENCIES(nvc jinja2_proc asio reproc mirror_utf8cpp)
+ADD_DEPENDENCIES(nvc jinja2_proc asio reproc utf8cpp)
 TARGET_LINK_LIBRARIES(nvc PRIVATE reproc++)
 
 TARGET_INCLUDE_DIRECTORIES(nvc PUBLIC "${MPACK_INCLUDE_DIRS}")

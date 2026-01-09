@@ -1,26 +1,10 @@
-#=======================================================================================
-#
-#        Filename: BuildASIO.cmake
-#         Created: 05/03/2016 13:19:07
-#     Description: required: LIBNVC_3RD_PARTY_DIR
-#
-#         Version: 1.0
-#        Revision: none
-#        Compiler: cmake
-#
-#          Author: ANHONG
-#           Email: anhonghe@gmail.com
-#    Organization: USTC
-#
-#=======================================================================================
-
 INCLUDE(ExternalProject)
 
 ExternalProject_Add(
     asio
 
     PREFIX "${LIBNVC_3RD_PARTY_DIR}/asio"
-    URL https://github.com/chriskohlhoff/asio/archive/asio-1-12-2.tar.gz
+    URL https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-36-0.tar.gz
 
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
